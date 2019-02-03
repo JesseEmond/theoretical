@@ -1,49 +1,50 @@
 """ Helper generic array functions. """
 
 
-def find_first_unsorted_index(X):
-    """
-    Finds the first element in an array that is not in sorted order.
-    If the array is fully sorted, returns the length of the array.
+def find_first_unsorted_index(A, start, length):
+    """Finds the index to the first element in the
+    subarray A[start:start+length) that is not in sorted order.
+    If the subarray is fully sorted, returns start+length.
 
     Example:
-        i = find_first_unsorted_index([10, 12, 13, 11, 14, 15])
-        assert i == 3  # '11'
+        A = [10, 12, 13, 11, 14, 15]
+        i = find_first_unsorted_index(A, start=1, length=4)
+        assert i == 3 and A[i] == 11
 
     Complexity:
-        - O(n) time
+        - O(length) time
         - O(1) space
     """
-    unsorted_elements = (i for i in range(1, len(X)) if X[i-1] > X[i])
-    return next(unsorted_elements, len(X))
+    unsorted_elements = (i for i in range(start+1, start+length)
+                         if A[i-1] > A[i])
+    default = start+length
+    return next(unsorted_elements, default)
 
-def swap_k_elements(X, start, k, target):
-    """
-    Swaps elements in-place at indices [start, start+k) with the elements at
+def swap_k_elements(A, start, k, target):
+    """Swaps elements in-place at indices [start, start+k) with the elements at
     indices [target, target+k), from left to right.
     Assumes that all indices to be swapped are valid indices.
 
     Example:
-        X = [0, 0, 1, 2, 2]
-        swap_k_elements(X, start=0, k=2, target=3)
-        assert X == [2, 2, 1, 0, 0]
+        A = [0, 0, 1, 2, 2]
+        swap_k_elements(A, start=0, k=2, target=3)
+        assert A == [2, 2, 1, 0, 0]
 
     Complexity:
-        - 0(k) time
+        - O(k) time
         - O(1) space
     """
     for i in range(k):
-        X[start+i], X[target+i] = X[target+i], X[start+i]
+        A[start+i], A[target+i] = A[target+i], A[start+i]
 
-def selection_sort(X, start, length):
-    """
-    Sorts the region [start, start+length) within X, using selection sort.
+def selection_sort(A, start, length):
+    """Sorts the region [start, start+length) within A, using selection sort.
     Guarantees to do at most |length| swaps (/moves).
 
     Example:
-        X = [3, 2, 1, 0]
-        selection_sort(X, start=1, length=2)
-        assert X == [3, 1, 2, 0]
+        A = [3, 2, 1, 0]
+        selection_sort(A, start=1, length=2)
+        assert A == [3, 1, 2, 0]
 
     Complexity:
         - O(length^2) time
@@ -52,18 +53,18 @@ def selection_sort(X, start, length):
     for current in range(start, start+length):  # length iterations
         remaining_elems_indices = (i for i in range(current, start+length))
         smallest_idx = min(remaining_elems_indices,  # O(length)
-                           key=lambda i: X[i])
-        X[current], X[smallest_idx] = X[smallest_idx], X[current]
+                           key=lambda i: A[i])
+        A[current], A[smallest_idx] = A[smallest_idx], A[current]
 
 
-def rotate_k_left(X, start, length, k):
-    """
-    Rotates the region [start, start+length) by k elements to the left within X.
+def rotate_k_left(A, start, length, k):
+    """Rotates the region [start, start+length) by k elements to the left
+    within A.
 
     Example:
-        X = [0, 1, 2, 3, 4, 5]
-        rotate_k_left(X, start=1, length=4, k=1)
-        assert X == [0, 2, 3, 4, 1, 5]
+        A = [0, 1, 2, 3, 4, 5]
+        rotate_k_left(A, start=1, length=4, k=1)
+        assert A == [0, 2, 3, 4, 1, 5]
 
     Complexity:
         - O(length) time
@@ -89,18 +90,17 @@ def rotate_k_left(X, start, length, k):
             x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}
     """
     k %= length  # prevent index out of bounds for looping ks
-    invert(X, start, k)  # O(k) = O(length)
-    invert(X, start+k, length-k)  # O(length-k) = O(length)
-    invert(X, start, length)  # O(length)
+    invert(A, start, k)  # O(k) = O(length)
+    invert(A, start+k, length-k)  # O(length-k) = O(length)
+    invert(A, start, length)  # O(length)
 
-def invert(X, start, length):
-    """
-    Inverts the region [start, start+length) within X.
+def invert(A, start, length):
+    """Inverts the region [start, start+length) within A.
 
     Example:
-        X = [0, 1, 2, 3]
-        invert(X, start=1, length=2)
-        assert X == [0, 2, 1, 3]
+        A = [0, 1, 2, 3]
+        invert(A, start=1, length=2)
+        assert A == [0, 2, 1, 3]
 
     Complexity:
         - O(length) time
@@ -108,6 +108,11 @@ def invert(X, start, length):
     """
     end = start+length-1
     while start < end:
-        X[start], X[end] = X[end], X[start]
+        A[start], A[end] = A[end], A[start]
         start += 1
         end -= 1
+
+def is_sorted(A, start, length):
+    """Checks if the given array is sorted for the range [start, start+length).
+    """
+    return find_first_unsorted_index(A, start, length) == start + length

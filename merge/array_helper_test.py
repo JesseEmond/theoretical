@@ -1,15 +1,21 @@
 import unittest
 from array_helper import (find_first_unsorted_index, swap_k_elements,
-                          rotate_k_left, invert, selection_sort)
+                          rotate_k_left, invert, selection_sort, is_sorted)
 
 
 class FindFirstUnsortedIndex(unittest.TestCase):
     def test_unordered(self):
         X = [0, 3, 6, 1, 2, 4, 5, 7, 8]
-        self.assertEqual(find_first_unsorted_index(X), 3)
+        self.assertEqual(find_first_unsorted_index(X, 0, len(X)), 3)
     def test_all_sorted(self):
         X = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        self.assertEqual(find_first_unsorted_index(X), len(X))
+        self.assertEqual(find_first_unsorted_index(X, 0, len(X)), len(X))
+    def test_unordered_middle(self):
+        X = [0, 3, 6, 1, 2, 4, 5, 7, 8]
+        self.assertEqual(find_first_unsorted_index(X, start=1, length=5), 3)
+    def test_sorted_middle(self):
+        X = [1, 0, 2, 3, 4, 5, 6, 7, 8]
+        self.assertEqual(find_first_unsorted_index(X, start=1, length=5), 6)
 
 class SwapKElements(unittest.TestCase):
     def test_swap_middle(self):
@@ -62,6 +68,20 @@ class SelectionSortTests(unittest.TestCase):
         X = [5, 4, 3, 2, 1, 0]
         selection_sort(X, start=1, length=4)
         self.assertEqual(X, [5, 1, 2, 3, 4, 0])
+
+class IsSortedTests(unittest.TestCase):
+    def test__sorted(self):
+        X = [0, 1, 2, 3, 4, 5]
+        self.assertTrue(is_sorted(X, 0, len(X)))
+    def test_unsorted(self):
+        X = [0, 1, 2, 5, 4, 3]
+        self.assertFalse(is_sorted(X, 0, len(X)))
+    def test_sorted_middle(self):
+        X = [5, 1, 2, 3, 4, 0]
+        self.assertTrue(is_sorted(X, start=1, length=4))
+    def test_unsorted_middle(self):
+        X = [0, 1, 2, 4, 3, 5]
+        self.assertFalse(is_sorted(X, start=1, length=4))
 
 
 if __name__ == "__main__":
