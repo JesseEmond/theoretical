@@ -29,16 +29,16 @@ If we didn't care about `O(N)` time, we could use an in-place sort algorithm (pr
 If we didn't have the `O(1)` memory requirement, we could easily build a new sorted array from copying, in order, from both subarrays:
 
 ```python
-first_y = index_first_out_of_order(orig)
+first_y = index_first_out_of_order(original)
 x, y = 0, first_y  # ptrs within subarrays
-new = list(orig)  # make a new array of N elements
+new = list(original)  # make a new array of N elements
 for i in range(len(new)):
-	if x < first_y and orig[x] < orig[y]:
-		new[i] = orig[x]
+	if x < first_y and original[x] < original[y]:
+		new[i] = original[x]
        	x += 1
 	else:
-  		assert y < len(orig)
- 		new[i] = orig[y]
+  		assert y < len(original)
+ 		new[i] = original[y]
  		y += 1
 ```
 
@@ -105,32 +105,60 @@ For future personal reference, some ideas that I think are pretty neat and could
 
 ## High-Level Algorithm
 
-Let's define `k = floor(sqrt(N))`.
+Let's define `Z = floor(sqrt(N))`.
 
 Here will be the high-level steps:
 
-1. Move the `k` biggest elements to the end, which we'll call `buffer`.
+1. Move the `Z` biggest elements to the end, which we'll call `buffer`.
    ​	`buffer` doesn't have to stay sorted, we'll fix it later.
-   ​	Divide `xs` and `ys` into blocks of `k` elements (assume we can, we'll fix in detailed algorithm)
+   ​	Divide `xs` and `ys` into blocks of `Z` elements (assume we can, we'll fix in detailed algorithm)
    ​	TODO(emond): diagram here
 2. Sort the blocks according to their first elements.
-3. For each block, grab the `k` smallest unsorted elements (using `buffer` as buffer to do so).
+3. For each block, grab the `Z` smallest unsorted elements (using `buffer` as buffer to do so).
 4. Sort `buffer`.
 
-The trick here is that the setup that we create (having blocks sorted by their first elements) allows us to do step `3` in `O(k)` for each block, giving us the following time complexities per step:
+The trick here is that the setup that we create (having blocks sorted by their first elements) allows us to do step 3 in `O(Z)` for each block, giving us the following time complexities per step:
 
-1. `O(k)` to grab the `k` biggest elements;
-2. `O(k^2) = O(sqrt(N)^2) = O(N)`, because with selection sort we can sort `k` blocks with `O(k^2)` comparisons of `O(1)` (comparing the first elements) with `k` swaps (`O(k)` to swap a block of `k` elements), yielding `O(k^2)` for comparisons + `O(k^2)` for swaps;
-3. Processing of `O(k)` for each block to grab the `k` smallest elements, done for each `k` blocks: `O(k^2) = O(N)`;
-4. Selection sort of a buffer of `k` elements, `O(k^2) = O(N)`.
+1. `O(Z)` to grab the `Z` biggest elements;
+2. `O(Z^2) = O(sqrt(N)^2) = O(N)`, because with selection sort we can sort `Z` blocks with `O(Z^2)` comparisons of `O(1)` (comparing the first elements) with `Z` swaps (`O(Z)` to swap a block of `Z` elements), yielding `O(Z^2)` for comparisons + `O(Z^2)` for swaps;
+3. Processing of `O(Z)` for each block to grab the `Z` smallest unsorted elements, done for each `Z` blocks: `O(Z^2) = O(N)`;
+4. Selection sort of a buffer of `Z` elements, `O(Z^2) = O(N)`.
 
 If we're careful in our implementation of each step to use a constant amount of pointers, we get an algorithm that is `O(N)` time and `O(1)` extra memory!
 
 ## Detailed Algorithm
 
+The code is heavily commented if you want to take a closer look at how this can be implemented.
+
+### 0.5 Setup
+
+Call our array to merge `A`. Compute `Z = floor(sqrt(N))`.
+
+Find `ys_start` (first element of `ys`) by going linearly through `A` to find the first unsorted element:
+
+```
+ys_start = next(i for i in range(1, len(A)) if A[i-1] > A[i])
+```
+
+
+
+### 1. Move `Z` biggest elements to `buffer`
+
 TODO
 
-## In Code
+### 1.5 Make `xs` and `ys` multiples of `Z`
+
+TODO
+
+### 2. Sort blocks based on first element
+
+TODO
+
+### 3. Grab `Z` smallest unsorted elements
+
+TODO
+
+### 4. Sort `buffer`
 
 TODO
 
