@@ -18,13 +18,13 @@ Would have to be sorted in `O(N)`, without an additional memory requirement that
 
 `0  1  2  3  4  5  6  7  8  9  10`
 
-*Note: by "in-place" and "`O(1)` extra space", I really mean "a constant number of pointers into the array" ([LSPACE](https://en.wikipedia.org/wiki/L_(complexity))), which amounts in reality to `O(lg n)` additional memory. Keep this in mind whenever you see `O(1)` memory.*
+*Note: by "in-place" and "`O(1)` extra space", I really mean "a constant number of pointers into the array" ([LSPACE](https://en.wikipedia.org/wiki/L_(complexity))), which amounts in reality to `O(lg N)` additional memory. Keep this in mind whenever you see `O(1)` memory. By `O(N)` time, I implicitly assume `O(1)` time to compare two elements. If that's not the case, the complexity becomes `O(n)` times the complexity of a comparison.*
 
 ## Naive Approaches
 
 To appreciate the complexity of the problem, it helps to see why and how naive approaches fail.
 
-If we didn't care about `O(N)` time, we could use an in-place sort algorithm (probably not merge-sort, which would likely use a function like the one we're trying to code here... :-) ) to solve it in `O(n lg n)`.
+If we didn't care about `O(N)` time, we could use an in-place sort algorithm (probably not merge-sort, which would likely use a function like the one we're trying to code here... :-) ) to solve it in `O(N lg N)`.
 
 If we didn't have the `O(1)` memory requirement, we could easily build a new sorted array from copying, in order, from both subarrays:
 
@@ -84,7 +84,7 @@ I considered finding the `(n+1)`th smallest element in `O(N)` (by having a point
 
 By naively doing so, I could have two subarrays that each contained two sorted subarrays to merge... so no closer to solving the problem in `O(N)` than initially.
 
-I played with ideas to move the elements `<= P` to `xs` while ensuring that they are in a sorted order in `xs` (so solving the problem for the first `n` elements!) Then, if I could find a way to maintain two sorted subarrays in the elements that I have to move to `ys`, I could hopefully maybe have sorted `n` elements in `O(n)` with an array of`m` elements (`N-n`) left to merge. However, finding a way to do that proved to be quite hard, or at least not in a way that would have been `O(n)`.
+I played with ideas to move the elements `<= P` to `xs` while ensuring that they are in a sorted order in `xs` (so solving the problem for the first `n` elements!) Then, if I could find a way to maintain two sorted subarrays in the elements that I have to move to `ys`, I could hopefully maybe have sorted `n` elements in `O(n)` with an array of `m` elements (`N-n`) left to merge. However, finding a way to do that proved to be quite hard, or at least not in a way that would have been `O(n)`.
 
 At this point I decided to read up on the problem a bit more, to see if there were theoretical tools that I was missing to find a solution. I ended up finding resources on the problem itself, with [this stackoverflow question](https://stackoverflow.com/q/2126219) standing out.
 
@@ -112,10 +112,23 @@ Here will be the high-level steps:
 1. Move the `Z` biggest elements to the end, which we'll call `buffer`.
    ​	`buffer` doesn't have to stay sorted, we'll fix it later.
    ​	Divide `xs` and `ys` into blocks of `Z` elements (assume we can, we'll fix in detailed algorithm)
-   ​	TODO(emond): diagram here
 2. Sort the blocks according to their first elements.
 3. For each block, grab the `Z` smallest unsorted elements (using `buffer` as buffer to do so).
 4. Sort `buffer`.
+
+General structure that we follow:
+
+```
+|-----:-----:--xs-:-----:-----|-----:-----:--ys--:-----:-----:-----|-buffer-|
+|=====|        ^                             ^                          ^
+   Z           |                             |                          |
+               |                             |                          |
+sorted, blocks of 'Z' elements               |           unsorted, 'Z' biggest elements
+                                             | 
+                               sorted, blocks of 'Z' elements
+```
+
+
 
 The trick here is that the setup that we create (having blocks sorted by their first elements) allows us to do step 3 in `O(Z)` for each block, giving us the following time complexities per step:
 
