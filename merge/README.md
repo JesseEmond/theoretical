@@ -130,35 +130,40 @@ If we're careful in our implementation of each step to use a constant amount of 
 
 The code is heavily commented if you want to take a closer look at how this can be implemented.
 
-### 0.5 Setup
+### 0.5) Setup
 
 Call our array to merge `A`. Compute `Z = floor(sqrt(N))`.
 
 Find `ys_start` (first element of `ys`) by going linearly through `A` to find the first unsorted element:
 
-```
+```python
 ys_start = next(i for i in range(1, len(A)) if A[i-1] > A[i])
 ```
 
+Then delimiters of start and length of `xs` and `ys` are easy to deduce:
 
+```python
+xs_start, xs_length = 0, ys_start
+ys_end = N - xs_length
+```
 
-### 1. Move `Z` biggest elements to `buffer`
-
-TODO
-
-### 1.5 Make `xs` and `ys` multiples of `Z`
-
-TODO
-
-### 2. Sort blocks based on first element
+### 1) Move `Z` biggest elements to `buffer`
 
 TODO
 
-### 3. Grab `Z` smallest unsorted elements
+### 1.5) Make `xs` and `ys` multiples of `Z`
 
 TODO
 
-### 4. Sort `buffer`
+### 2) Sort blocks based on first element
+
+TODO
+
+### 3) Grab `Z` smallest unsorted elements
+
+TODO
+
+### 4) Sort `buffer`
 
 TODO
 
