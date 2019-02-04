@@ -69,6 +69,8 @@ def _point_to_kth_biggest(A, pointers, k):
     from both ends until one of them reaches the kth biggest element. The other
     pointer will point to the last element in that subarray which was part of
     the k-1 largest elements before that.
+    In simpler terms, point to the end of xs and ys and move, in descending
+    order, both pointers until we've moved k times.
     If none of the k biggest elements is in a particular subarray, its pointer
     will be on start+length of that subarray.
     If a subarray is exhausted, the pointer will remain on its start element.
@@ -83,7 +85,6 @@ def _point_to_kth_biggest(A, pointers, k):
         - O(|ys| + |xs|) time
         - O(1) space
     """
-    # TODO(emond): README
     assert k <= pointers.xs_length + pointers.ys_length
     x_pointer = pointers.xs_start + pointers.xs_length
     y_pointer = pointers.ys_start + pointers.ys_length
@@ -131,15 +132,15 @@ def _move_k_biggest_elements_to_end(A, pointers, k):
         - O(1) space
     """
     assert pointers.xs_length + pointers.ys_length >= k
-    # TODO(emond): put in README
     # How many elements from 'xs' are part of the 'k' biggest?
     xs_biggest_start, ys_biggest_start = _point_to_kth_biggest(A, pointers, k)
+    # What will my new xs and ys look like?
     xs_biggest_length = pointers.ys_start - xs_biggest_start
     ys_biggest_length = (pointers.ys_start + pointers.ys_length
                          - ys_biggest_start)
     new_xs_length = pointers.xs_length - xs_biggest_length
     new_ys_start = new_xs_length
-    new_ys_length=pointers.ys_length - ys_biggest_length
+    new_ys_length = pointers.ys_length - ys_biggest_length
     # Rotate the last elements of 'xs' that belong in 'buffer' ("big xs") so
     # that they're on the right of the new 'ys', starting from:
     # |-----xs-----:--big-xs--|-----ys-----:--big-ys--|

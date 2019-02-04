@@ -150,19 +150,132 @@ Call our array to merge `A`. Compute `Z = floor(sqrt(N))`.
 Find `ys_start` (first element of `ys`) by going linearly through `A` to find the first unsorted element:
 
 ```python
-ys_start = next(i for i in range(1, len(A)) if A[i-1] > A[i])
+ys_start = next(i for i in range(1, len(A)) if A[i-1] > A[i])  # O(N)
 ```
 
 Then delimiters of start and length of `xs` and `ys` are easy to deduce:
 
 ```python
 xs_start, xs_length = 0, ys_start
-ys_end = N - xs_length
+ys_length = N - xs_length
 ```
 
 ### 1) Move `Z` biggest elements to `buffer`
 
-TODO
+To move the `Z` biggest elements to the end of the array, we do so in 2 steps:
+
+1. Spot which elements of `xs` and `ys` are part of the `Z` biggest;
+2. Rotate to move the smaller `ys` to be alongside the smaller `xs` (bringing the biggest numbers to the back).
+
+With a diagram:
+
+```
+|----------------xs---------------|------------------ys-------------------|
+#1: Z biggest elements:  ^^^^^^^^^                               ^^^^^^^^^
+
+|----------------xs------|-xs_big-|------------------ys----------|-ys_big-|
+#2: rotate                <=======rotate-------------------------|
+|----------------xs------|------------------ys----------|-xs_big-|-ys_big-|
+                                                        |------buffer-----|
+```
+
+ To do so, we'll need a few tools.
+
+```python
+def point_to_kth_biggest(A, xs_start, xs_length, ys_start, ys_length, k):
+  """Returns pointers within each sorted array such that one of them points
+  to the kth biggest element, while the other one points to the last element
+  seen within its subarray part of the k biggest elements.
+  
+  In simpler terms, point to the end of xs and ys and move, in descending order,
+  both pointers until we've moved k times.
+  
+  Assumes k <= |xs|+|ys| and that xs and ys are sorted.
+  """
+  x_ptr = xs_start+xs_length
+  y_ptr = ys_start+ys_length
+  for _ in range(k):
+    if x_ptr <= xs_start:  # exhausted all 'xs'
+      y_ptr -= 1  # move y
+    elif y_ptr <= ys_start:  # exhausted all 'ys'
+      x_ptr -= 1  # move x
+    elif A[y_ptr-1] > A[x_ptr-1]:  # 'ys' has next largest element
+      y_ptr -= 1  # move y
+    else:
+      x_ptr -= 1  # move x
+  return (x_ptr, y_ptr)
+```
+
+We'll also need a rotate function, which we can cleverly implement linearly in-place with `invert`:
+
+```python
+def rotate_k_left(A, start, length, k):
+  """Rotate elements within an array k elements to the left, using inversions."""
+  invert(A, start, k)
+  invert(A, start+k, length-k)
+  invert(A, start, length)
+  
+def invert(A, start, length):
+  last = start+length-1
+  for i in range(length//2):
+    A[start+i], A[last-i] = A[last-i], A[start+i]
+```
+
+To see why rotate left works when implemented like that, it helps to follow a labeled array:
+
+```
+Initially we have:
+    x_0  x_1  ...  x_{k-2}  x_{k-1}  x_k  x_{k+1}  ...  x_{n-1}  x_n     
+Our goal is to have:                                                     
+    x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}     
+So from our initial array:                                               
+    x_0  x_1  ...  x_{k-2}  x_{k-1}  x_k  x_{k+1}  ...  x_{n-1}  x_n     
+We do invert(0, k):                                                      
+    x_{k-1}  x_{k-2}  ...  x_1  x_0  x_k  x_{k+1}  ...  x_{n-1}  x_n     
+Then invert(k, n):                                                       
+    x_{k-1}  x_{k-2}  ...  x_1  x_0  x_n  x_{n-1}  ...  x_{k+1}  x_k     
+Finally invert(0, n):                                                    
+    x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}
+```
+
+With a reminder of what we want to do:
+
+```
+|----------------xs---------------|------------------ys-------------------|
+#1: Z biggest elements:  ^^^^^^^^^                               ^^^^^^^^^
+
+|----------------xs------|-xs_big-|------------------ys----------|-ys_big-|
+#2: rotate                <=======rotate-------------------------|
+|----------------xs------|------------------ys----------|-xs_big-|-ys_big-|
+                                                        |------buffer-----|
+```
+
+We can now look at implementing the move of the `Z` biggest elements:
+
+```python
+# Move the Z biggest elements to the end (our buffer)
+xs_big_start, ys_big_start = point_to_kth_biggest(A, xs_start, xs_length,
+                                                  ys_start, ys_length, k=Z)
+# How many elements from xs and ys do we have to move?
+xs_big_length = ys_start - xs_big_start
+ys_big_length = ys_start + ys_length - ys_big_start
+# What will be the new positions/dimensions of our xs/ys after the move?
+new_xs_length = xs_length - xs_big_length
+new_ys_start = new_xs_length
+new_ys_length = ys_length - ys_big_length
+
+# Rotate the big elements of xs so that they're at the end,
+# and xs and ys at the start.
+rotate_k_left(A, start=xs_big_start, length=xs_big_length+new_ys_length,
+              k=xs_big_length)
+
+# Adjust xs and ys
+xs_length = new_xs_length
+ys_start = new_ys_start
+ys_length = new_ys_length
+buffer_start = new_ys_start + new_ys_length
+buffer_length = Z
+```
 
 ### 1.5) Make `xs` and `ys` multiples of `Z`
 

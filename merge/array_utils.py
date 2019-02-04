@@ -106,11 +106,9 @@ def invert(A, start, length):
         - O(length) time
         - O(1) space
     """
-    end = start+length-1
-    while start < end:
-        A[start], A[end] = A[end], A[start]
-        start += 1
-        end -= 1
+    last = start+length-1
+    for i in range(length//2):
+        A[start+i], A[last-i] = A[last-i], A[start+i]
 
 def is_sorted(A, start, length):
     """Checks if the given array is sorted for the range [start, start+length).
