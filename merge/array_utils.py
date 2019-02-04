@@ -115,4 +115,5 @@ def invert(A, start, length):
 def is_sorted(A, start, length):
     """Checks if the given array is sorted for the range [start, start+length).
     """
-    return find_first_unsorted_index(A, start, length) == start + length
+    all_unsorted_index = start + length
+    return find_first_unsorted_index(A, start, length) == all_unsorted_index
