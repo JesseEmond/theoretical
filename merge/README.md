@@ -278,7 +278,6 @@ buffer_length = Z
 ```
 
 ### 1.5) Make `xs` and `ys` multiples of `Z`
-
 TODO
 
 ### 2) Sort blocks based on first element
