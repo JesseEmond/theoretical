@@ -2,6 +2,7 @@ import unittest
 from array_utils import is_sorted
 from merge import (_point_to_kth_biggest, _move_k_biggest_elements_to_end,
                    _move_last_elements_to_end, SubarrayPointers)
+# TODO(emond): add tests for xs_start > 0
 
 
 def pointers_for(xs, ys, buffer_=None):
@@ -51,7 +52,6 @@ class PointToKthBiggestTests(unittest.TestCase):
         A = xs + ys
         self.assertEqual(_point_to_kth_biggest(A, pointers_for(xs, ys), k=2),
                          (1, 6))
-
 
 class MoveLastElementsToEndTests(unittest.TestCase):
     def test_move_both_xs_ys(self):

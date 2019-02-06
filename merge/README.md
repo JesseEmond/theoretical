@@ -164,8 +164,8 @@ ys_length = N - xs_length
 
 To move the `Z` biggest elements to the end of the array, we do so in 2 steps:
 
-1. Spot which elements of `xs` and `ys` are part of the `Z` biggest;
-2. Rotate to move the smaller `ys` to be alongside the smaller `xs` (bringing the biggest numbers to the back).
+1. Spot which elements of `xs` and `ys` are part of the `Z` biggest (`xs_to_move` and `ys_to_move`);
+2. Move that many last elements of `xs` and `ys` to the end of the array (to the `buffer`). We do so like such: rotate to move the smaller `ys` to be alongside the smaller `xs` (bringing the biggest numbers to the back).
 
 With a diagram:
 
@@ -242,7 +242,7 @@ With a reminder of what we want to do:
 
 ```
 |----------------xs---------------|------------------ys-------------------|
-#1: Z biggest elements:  ^^^^^^^^^                               ^^^^^^^^^
+#1:         xs_to_move:  ^^^^^^^^^                   ys_to_move: ^^^^^^^^^
 
 |----------------xs------|-xs_big-|------------------ys----------|-ys_big-|
 #2: rotate                <=======rotate-------------------------|
@@ -250,34 +250,55 @@ With a reminder of what we want to do:
                                                         |------buffer-----|
 ```
 
-We can now look at implementing the move of the `Z` biggest elements:
+We can make a generic function that moves the last `xs_to_move` elements from `xs` and last  `ys_to_move` elements from `ys` to the end of our array (in `buffer`):
 
 ```python
-# Move the Z biggest elements to the end (our buffer)
+def move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
+                              buffer_length, xs_to_move, ys_to_move):
+  """Moves the end of both sorted subarrays to the end of A.
+  Takes the last 'xs_to_move' elements from 'xs' and the last 'ys_to_move'
+  elements from 'ys' and moves them all after 'ys' (in 'buffer').
+  
+  Assumes xs_to_move<=|xs|, ys_to_move<=|ys|
+  """
+  new_xs_start = xs_start
+  new_xs_length = xs_length - xs_to_move
+  new_ys_start = new_xs_start + new_xs_length
+  new_ys_length = ys_length - ys_to_move
+  new_buffer_start = new_ys_start + new_ys_length
+  new_buffer_length = buffer_length + xs_to_move + ys_to_move
+  
+  # from:
+  # |-----xs-----:--big-xs--|-----ys-----:--big-ys--|
+  #              |<=========rotate-------|                                     
+  # to get:                                                                    
+  # |-----xs-----|-----ys-----|--big-xs--:--big-ys--|                          
+  #                            ^^^^^^^ buffer ^^^^^^ 
+  array_utils.rotate_k_left(A, start=new_ys_start, length=xs_to_move + new_ys_length,
+                            k=xs_to_move)
+  return (new_xs_start, new_xs_length, new_ys_start, new_ys_length,
+          new_buffer_start, new_buffer_length)  # dimensions of sections change
+```
+
+We can now get back to moving the `Z` biggest elements:
+
+```python
+# 1) Move the Z biggest elements to the end (our buffer)
 xs_big_start, ys_big_start = point_to_kth_biggest(A, xs_start, xs_length,
                                                   ys_start, ys_length, k=Z)
 # How many elements from xs and ys do we have to move?
-xs_big_length = ys_start - xs_big_start
-ys_big_length = ys_start + ys_length - ys_big_start
-# What will be the new positions/dimensions of our xs/ys after the move?
-new_xs_length = xs_length - xs_big_length
-new_ys_start = new_xs_length
-new_ys_length = ys_length - ys_big_length
-
-# Rotate the big elements of xs so that they're at the end,
-# and xs and ys at the start.
-rotate_k_left(A, start=xs_big_start, length=xs_big_length+new_ys_length,
-              k=xs_big_length)
-
-# Adjust xs and ys
-xs_length = new_xs_length
-ys_start = new_ys_start
-ys_length = new_ys_length
-buffer_start = new_ys_start + new_ys_length
-buffer_length = Z
+xs_top_elements = ys_start - xs_big_start
+ys_top_elements = ys_start + ys_length - ys_big_start
+xs_start, xs_length, ys_start, ys_length, buffer_start, buffer_length =
+	move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
+                              buffer_length=0,
+                              xs_to_move=xs_top_elements, ys_to_move=ys_top_elements)
 ```
 
+In actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure.
+
 ### 1.5) Make `xs` and `ys` multiples of `Z`
+
 TODO
 
 ### 2) Sort blocks based on first element

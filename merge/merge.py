@@ -166,7 +166,7 @@ def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
     # to get:
     # |-----xs-----|-----ys-----|--big-xs--:--big-ys--|
     #                            ^^^^^^^ buffer ^^^^^^
-    array_utils.rotate_k_left(A, start=new_xs_start + new_xs_length,
+    array_utils.rotate_k_left(A, start=new_ys_start,
                               length=xs_to_move + new_ys_length,
                               k=xs_to_move)
     return SubarrayPointers(xs_start=new_xs_start,
