@@ -155,7 +155,7 @@ def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
     # What will my new xs and ys look like?
     new_xs_start = pointers.xs_start
     new_xs_length = pointers.xs_length - xs_to_move
-    new_ys_start = new_xs_length
+    new_ys_start = new_xs_start + new_xs_length
     new_ys_length = pointers.ys_length - ys_to_move
     new_buffer_start = new_ys_start + new_ys_length
     new_buffer_length = pointers.buffer_length + xs_to_move + ys_to_move
