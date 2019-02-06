@@ -283,7 +283,7 @@ def move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
 We can now get back to moving the `Z` biggest elements:
 
 ```python
-# 1) Move the Z biggest elements to the end (our buffer)
+# 1) Move the Z biggest elements to the end (our buffer).
 xs_big_start, ys_big_start = point_to_kth_biggest(A, xs_start, xs_length,
                                                   ys_start, ys_length, k=Z)
 # How many elements from xs and ys do we have to move?
@@ -297,9 +297,27 @@ xs_start, xs_length, ys_start, ys_length, buffer_start, buffer_length =
 
 In actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure.
 
+`buffer` now has `Z` elements.
+
 ### 1.5) Make `xs` and `ys` multiples of `Z`
 
-TODO
+Now, to make the rest of the algorithm simpler, we'll guarantee that `xs` and `ys` are exact multiples of `Z` by moving their `mod Z` "overflow" at the end:
+
+```python
+# 1.5) Make xs and ys multiples of Z.
+xs_overflow = xs_length % Z
+ys_overflow = ys_length % Z
+# only care about where the buffer starts after this, don't need xs/ys.
+_, _, _, _, buffer_zone, _ = move_last_elements_to_end(A, xs_start, xs_length,
+                                                       ys_start, ys_length,
+                                                       buffer_start, buffer_length,
+                                                       xs_to_move=xs_overflow,
+                                                       ys_to_move=ys_overflow)
+```
+
+Note that this could have been combined in the previous step to only do one rotate (we can compute `new_xs_length` to then compute `xs_overflow` and add it to `xs_top_elements` and do the same for `ys`), but I feel that doing so as a separate step like here keeps the functions pretty contained and with a clear purpose (with the same complexity!)
+
+Now, `buffer` has `< 3Z` elements (`Z + (|X| % Z) + (|Y| % Z) < 3Z`, which is `O(Z)`).
 
 ### 2) Sort blocks based on first element
 

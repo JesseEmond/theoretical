@@ -72,12 +72,10 @@ def merge_inplace(A):
     pointers = _move_k_biggest_elements_to_end(A, pointers, Z)
 
     # 1.5) Make 'xs' and 'ys' multiples of 'Z'.
-    # TODO(emond): README
     xs_overflow = pointers.xs_length % Z
     ys_overflow = pointers.ys_length % Z
     pointers = _move_last_elements_to_end(A, pointers, xs_overflow, ys_overflow)
     buffer_zone = pointers.buffer_start  # just need buffer now, no more xs/ys
-    # TODO(emond): put the above in a function and test
 
     # 2) Sort the blocks according to their first elements.
     # TODO(emond): README
