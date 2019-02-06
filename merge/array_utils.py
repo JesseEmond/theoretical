@@ -47,7 +47,7 @@ def selection_sort(length, compare_fn, swap_fn):
     Example:
         A = [3, 2, 1, 0]
         compare_fn = lambda i, j: A[i] < A[j]
-        swap_fn = lambda i, j: A[i], A[j] = A[j], A[i]
+        def swap_fn(i, j): A[i], A[j] = A[j], A[i]
         selection_sort(len(A), compare_fn, swap_fn)
         assert A == [3, 1, 2, 0]
 

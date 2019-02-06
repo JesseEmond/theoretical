@@ -70,10 +70,9 @@ class SelectionSortTests(unittest.TestCase):
     def test_sort_middle(self):
         start=1
         A = [5, 4, 3, 2, 1, 0]
-        def swap(i, j):
-            A[start+i], A[start+j] = A[start+j], A[start+i]
+        def swap_fn(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
         compare_fn = lambda i, j: A[start+i] < A[start+j]
-        selection_sort(length=4, compare_fn=compare_fn, swap_fn=swap)
+        selection_sort(length=4, compare_fn=compare_fn, swap_fn=swap_fn)
         self.assertEqual(A, [5, 1, 2, 3, 4, 0])
 
 class IsSortedTests(unittest.TestCase):
