@@ -27,7 +27,7 @@ def swap_k_elements(A, start, k, target):
 
     Example:
         A = [0, 0, 1, 2, 2]
-        swap_k_elements(A, start=0, k=2, target=3)
+        swap_k_elements(A, start=0, target=3, k=2)
         assert A == [2, 2, 1, 0, 0]
 
     Complexity:
@@ -49,7 +49,7 @@ def selection_sort(length, compare_fn, swap_fn):
         compare_fn = lambda i, j: A[i] < A[j]
         def swap_fn(i, j): A[i], A[j] = A[j], A[i]
         selection_sort(len(A), compare_fn, swap_fn)
-        assert A == [3, 1, 2, 0]
+        assert A == [0, 1, 2, 3]
 
     Complexity:
         - O(length^2) time  (O(length) swaps)

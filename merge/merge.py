@@ -75,10 +75,8 @@ def merge_inplace(A):
     xs_overflow = pointers.xs_length % Z
     ys_overflow = pointers.ys_length % Z
     pointers = _move_last_elements_to_end(A, pointers, xs_overflow, ys_overflow)
-    buffer_zone = pointers.buffer_start  # just need buffer now, no more xs/ys
 
     # 2) Sort the blocks according to their first elements.
-    # TODO(emond): README
     num_blocks = (pointers.xs_length + pointers.ys_length) // Z
     start = pointers.xs_start
     compare_first_elem = lambda i, j: A[start+i] < A[start+j]
@@ -95,11 +93,18 @@ def merge_inplace(A):
         _merge_inplace_with_buffer(A,
                 SubarrayPointers(xs_start=current_block_start, xs_length=Z,
                                  ys_start=next_block_start, ys_length=Z,
-                                 buffer_start=buffer_zone, buffer_length=Z))
+                                 buffer_start=pointers.buffer_start,
+                                 buffer_length=Z))
 
     # 4) Sort our buffer of big elements.
     # TODO(emond): README
-    array_utils.selection_sort(A, buffer_zone, pointers.buffer_length)
+    start = pointers.buffer_start
+    compare_buffer_elem = lambda i, j: A[start+i] < A[start+j]
+    def swap_buffer_elem(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
+    array_utils.selection_sort(length=poiners.buffer_length,
+                               compare_fn=compare_buffer_elem,
+                               swap_fn=swap_buffer_elem)
+    # TODO(emond): test
 
 
 def _merge_inplace_with_buffer(A, pointers):

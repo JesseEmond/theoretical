@@ -319,9 +319,40 @@ Now, `buffer` has `< 3Z` elements (`Z + (|X| % Z) + (|Y| % Z) < 3Z`, which is `O
 
 ### 2) Sort blocks based on first element
 
-TODO selection_sort + # comparisons + # swaps
+To sort our blocks, we use selection sort. It has the nice property that it will do `O(n)` swaps (and each block swap is `O(Z)` (moving the whole block), for a total of `O(Z^2) = O(N)`). Since there are `O(Z)` blocks (`N = sqrt(N)^2 = Z^2` and we divided `N` elements into blocks of `Z` elements, then moved some of those elements to `buffer`, so we have `O(Z)` blocks), selection sort will do `O(Z^2) = O(N)` comparisons. The swap and comparison costs conserve our `O(N)` time complexity requirement.
 
-TODO swap_elements
+We implement selection sort as a general function so that we can reuse it both to sort blocks and to sort `buffer` at the end:
+
+```python
+def selection_sort(length, compare_fn, swap_fn):
+  for i in range(length):
+    min_index = i
+    for j in range(i+1, length):
+      if compare_fn(j, min_index):
+        min_index = j
+    if min_index != i:
+      swap_fn(i, min_index)
+```
+
+For example, here is how we would swap a normal list of numbers:
+
+```python
+A = [3, 2, 1, 0]
+compare_fn = lambda i, j: A[i] < A[j]
+def swap_fn(i, j): A[i], A[j] = A[j], A[i]
+selection_sort(len(A), compare_fn, swap_fn)
+assert A == [0, 1, 2, 3]
+```
+
+Let's define another helper function:
+
+```python
+def swap_k_elements(A, start, target, k):
+  for i in range(k):
+    A[start+i], A[target+i] = A[target+i], A[start+i]
+```
+
+We can now sort the blocks:
 
 ```python
 # 2) Sort blocks based on first element.
@@ -331,11 +362,23 @@ swap_block = lambda i, j: swap_k_elements(A, xs_start+i*Z, xs_start+j*Z, k=Z)
 selection_sort(length=num_blocks, compare_fn=compare_first_elem, swap_fn=swap_block)
 ```
 
-TODO why is that interesting?
+Now what's interesting about sorting blocks in this way is that, if we take 2 adjacent blocks after the sort and assume that everything to the left of them is fully sorted (in their final positions in `A`), they are guaranteed to contain the next `Z` smallest elements in the unsorted part of `A`. Why is that?
 
-### 3) Grab `Z` smallest unsorted elements
+- If both blocks are from the same original sorted subarray (assume they are both from `xs` , but the logic holds for `ys` too), then step 2) would not have changed their relative order and they would have remained sorted in their original order.
+  - So, we know that the first block of `Z` elements would be the smallest `Z` elements out of all the remaining `xs`.
+  - Since all the elements in that first block are smaller than the first element of that second block (as per the sort from step 2), we also know that no other `ys` elements could be smaller than any elements in that first block (or else, we would have a `ys` block instead of an `xs` block as our second block!)
+  - This means that this first block is in its final position, and we can skip it (it has the `Z` smallest elements, in order)!
+- If both blocks originate from different sorted subarrays (assume the first block is from `xs` and the second from `ys`, but logic holds both ways), then the first block contains the smallest `Z` remaining elements of `xs` (similar logic as the precedent case) and the second block contains the smallest `Z` remaining elements of `ys`. Thus, the `Z` smallest elements of the two blocks are the `Z` smallest elements of all remaining elements.
+
+### 3) Grab `Z` smallest unsorted elements for each block
+
+This is where the algorithm gets really elegant.
+
+We ultimately want to go through `A`, one block at a time, grabbing the `Z` smallest elements out
 
 TODO
+
+TODO what happens to the next block when we sort? why does that hold our logic from the 2)?
 
 ### 4) Sort `buffer`
 

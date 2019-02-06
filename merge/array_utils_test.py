@@ -20,11 +20,11 @@ class FindFirstUnsortedIndexTests(unittest.TestCase):
 class SwapKElementsTests(unittest.TestCase):
     def test_swap_middle(self):
         A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        swap_k_elements(A, start=2, k=3, target=6)
+        swap_k_elements(A, start=2, target=6, k=3)
         self.assertEqual(A, [0, 1, 6, 7, 8, 5, 2, 3, 4, 9])
     def test_swap_self(self):
         A = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        swap_k_elements(A, 0, len(A), target=0)
+        swap_k_elements(A, 0, target=0, k=len(A))
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
 class RotateKLeftTests(unittest.TestCase):
