@@ -80,7 +80,12 @@ def merge_inplace(A):
     # 2) Sort the blocks according to their first elements.
     # TODO(emond): README
     num_blocks = (pointers.xs_length + pointers.ys_length) // Z
-    sort_blocks(A, pointers.xs_start, length=num_blocks*Z)  # TODO impl+test
+    start = pointers.xs_start
+    compare_first_elem = lambda i, j: A[start+i] < A[start+j]
+    swap_block = lambda i, j: array_utils.swap_k_elements(A, start+i*Z,
+                                                          start+j*Z, k=Z)
+    array_utils.selection_sort(length=num_blocks, compare_fn=compare_first_elem,
+                               swap_fn=swap_block)
 
     # 3) Fully sort a block at a time.
     # TODO(emond): README

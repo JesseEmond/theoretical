@@ -62,11 +62,18 @@ class InvertTests(unittest.TestCase):
 class SelectionSortTests(unittest.TestCase):
     def test_sort_all(self):
         A = [5, 4, 3, 2, 1, 0]
-        selection_sort(A, 0, len(A))
+        compare_fn = lambda i, j: A[i] < A[j]
+        def swap(i, j):
+            A[i], A[j] = A[j], A[i]
+        selection_sort(len(A), compare_fn, swap)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5])
     def test_sort_middle(self):
+        start=1
         A = [5, 4, 3, 2, 1, 0]
-        selection_sort(A, start=1, length=4)
+        def swap(i, j):
+            A[start+i], A[start+j] = A[start+j], A[start+i]
+        compare_fn = lambda i, j: A[start+i] < A[start+j]
+        selection_sort(length=4, compare_fn=compare_fn, swap_fn=swap)
         self.assertEqual(A, [5, 1, 2, 3, 4, 0])
 
 class IsSortedTests(unittest.TestCase):

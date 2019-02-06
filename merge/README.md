@@ -307,12 +307,10 @@ Now, to make the rest of the algorithm simpler, we'll guarantee that `xs` and `y
 # 1.5) Make xs and ys multiples of Z.
 xs_overflow = xs_length % Z
 ys_overflow = ys_length % Z
-# only care about where the buffer starts after this, don't need xs/ys.
-_, _, _, _, buffer_zone, _ = move_last_elements_to_end(A, xs_start, xs_length,
-                                                       ys_start, ys_length,
-                                                       buffer_start, buffer_length,
-                                                       xs_to_move=xs_overflow,
-                                                       ys_to_move=ys_overflow)
+xs_start, xs_length, ys_start, ys_length, buffer_start, _ =
+	move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
+                              buffer_start, buffer_length,
+                              xs_to_move=xs_overflow, ys_to_move=ys_overflow)
 ```
 
 Note that this could have been combined in the previous step to only do one rotate (we can compute `new_xs_length` to then compute `xs_overflow` and add it to `xs_top_elements` and do the same for `ys`), but I feel that doing so as a separate step like here keeps the functions pretty contained and with a clear purpose (with the same complexity!)
@@ -321,7 +319,19 @@ Now, `buffer` has `< 3Z` elements (`Z + (|X| % Z) + (|Y| % Z) < 3Z`, which is `O
 
 ### 2) Sort blocks based on first element
 
-TODO
+TODO selection_sort + # comparisons + # swaps
+
+TODO swap_elements
+
+```python
+# 2) Sort blocks based on first element.
+num_blocks = (xs_length + ys_length) // Z
+compare_first_elem = lambda i, j: A[xs_start+i*Z] < A[xs_start+j*Z]
+swap_block = lambda i, j: swap_k_elements(A, xs_start+i*Z, xs_start+j*Z, k=Z)
+selection_sort(length=num_blocks, compare_fn=compare_first_elem, swap_fn=swap_block)
+```
+
+TODO why is that interesting?
 
 ### 3) Grab `Z` smallest unsorted elements
 

@@ -37,24 +37,31 @@ def swap_k_elements(A, start, k, target):
     for i in range(k):
         A[start+i], A[target+i] = A[target+i], A[start+i]
 
-def selection_sort(A, start, length):
-    """Sorts the region [start, start+length) within A, using selection sort.
+
+def selection_sort(length, compare_fn, swap_fn):
+    """Generalized sort, using selection sort.
+    Elements are compared by calling compare_fn with the indices of 2 elements.
+    Elements are swapped by calling swap_fn with the indices of 2 elements.
     Guarantees to do at most |length| swaps (/moves).
 
     Example:
         A = [3, 2, 1, 0]
-        selection_sort(A, start=1, length=2)
+        compare_fn = lambda i, j: A[i] < A[j]
+        swap_fn = lambda i, j: A[i], A[j] = A[j], A[i]
+        selection_sort(len(A), compare_fn, swap_fn)
         assert A == [3, 1, 2, 0]
 
     Complexity:
-        - O(length^2) time
+        - O(length^2) time  (O(length) swaps)
         - O(1) space
     """
-    for current in range(start, start+length):  # length iterations
-        remaining_elems_indices = (i for i in range(current, start+length))
-        smallest_idx = min(remaining_elems_indices,  # O(length)
-                           key=lambda i: A[i])
-        A[current], A[smallest_idx] = A[smallest_idx], A[current]
+    for i in range(length):
+        min_index = i
+        for j in range(i+1, length):
+            if compare_fn(j, min_index):
+                min_index = j
+        if min_index != i:
+            swap_fn(i, min_index)
 
 
 def rotate_k_left(A, start, length, k):
