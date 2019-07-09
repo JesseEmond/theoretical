@@ -2,7 +2,7 @@
 
 A colleague of mine gave me an interesting challenge: to essentially do the merge part of a merge-sort in `O(N)` time and `O(1)` extra space. A bit more formally:
 
-Given an array of `N` elements split in two sorted subarrays:
+Given an array of `N` elements split in two sorted subarrays (of potentially different sizes):
 
 ​	`x0  x1  ...  xn   y0  y1  ...  ym` 
 
@@ -18,7 +18,7 @@ Would have to be sorted in `O(N)`, without an additional memory requirement that
 
 `0  1  2  3  4  5  6  7  8  9  10`
 
-*Note: by "in-place" and "`O(1)` extra space", I really mean "a constant number of pointers into the array" ([LSPACE](https://en.wikipedia.org/wiki/L_(complexity))), which amounts in reality to `O(lg N)` additional memory. Keep this in mind whenever you see `O(1)` memory. By `O(N)` time, I implicitly assume `O(1)` time to compare two elements. If that's not the case, the complexity becomes `O(n)` times the complexity of a comparison.*
+*Note: by "in-place" and "`O(1)` extra space", I really mean "a constant number of pointers into the array" ([LSPACE](https://en.wikipedia.org/wiki/L_(complexity))), which amounts in reality to `O(lg N)` additional memory. Keep this in mind whenever you see `O(1)` memory. By `O(N)` time, I implicitly assume `O(1)` time to compare two elements. If that's not the case, the final complexity becomes `O(N)` times the complexity of a comparison.*
 
 ## Naive Approaches
 
@@ -33,18 +33,19 @@ first_y = index_first_out_of_order(original)
 x, y = 0, first_y  # ptrs within subarrays
 new = list(original)  # make a new array of N elements
 for i in range(len(new)):
-	if x < first_y and original[x] < original[y]:
-		new[i] = original[x]
-       	x += 1
-	else:
-  		assert y < len(original)
- 		new[i] = original[y]
- 		y += 1
+  xs_exhausted = x >= first_y
+  ys_exhausted = y >= len(original)
+  if ys_exhausted or (not xs_exhausted and original[x] < original[y]):
+	new[i] = original[x]
+    x += 1
+  else:
+ 	new[i] = original[y]
+ 	y += 1
 ```
 
 But we're not allowed the `O(N)` extra memory.
 
-What if we blindly tried this approach, but did it all in-line with swaps instead of doing copies to separate storage? We'd run into issues pretty fast:
+What if we blindly tried this approach, but did it all in-line with swaps instead of doing copies to separate storage (essentially replace `new[i] = original[whatever]` with `new[i], original[whatever] = original[whatever], new[i]` (swap))? We'd run into issues pretty fast:
 
 ```
 4  5  8  9   0  1  2  3  6  7
@@ -53,7 +54,7 @@ What if we blindly tried this approach, but did it all in-line with swaps instea
              !  ! (ys not sorted anymore)
 ```
 
-We break the sort on `ys`, which is a problem because then we would need to remember that there's a `4` sitting there that will eventually be the smallest element to grab (after `1  2  3`). We could try to remember that this one element is sitting there (with a pointer), but then how many more elements will we need to remember in the same manner before getting to that `4`? If we can come up with examples where that bookkeeping grows with `N`, we're no longer `O(1)` memory.
+We break the sort on `ys`, which is a problem because then we would need to remember that there's a `4` sitting there that will eventually be the smallest element to grab (after `1  2  3`). We could try to remember that this one element is sitting there (with a pointer), but then how many more elements will we need to remember in the same manner before getting to that `4`? If we can come up with examples where this additional bookkeeping grows with `N` (i.e. non-constant), we're no longer `O(1)` memory.
 
 What if we try to move the `4` to where it belongs in `ys`, via an `O(k)`  rotate (`k` being the number of elements in `ys` that are `< 4`), before doing that swap? A strategy like that would break down if we have something like this:
 
@@ -63,7 +64,7 @@ What if we try to move the `4` to where it belongs in `ys`, via an `O(k)`  rotat
 
 because we would swap the `5`, rotate it to the right of `ys`, swap the `6`, rotate it to the right, ... We would have to shift each `N/2` `xs` elements to the right of `ys` (which takes `O(N/2)`), which would lead to `O(N^2)`.
 
-What if instead of just swapping the `0` with the `4` in our first example, we also swap any other `ys` numbers that we *know* will come before `4`:
+What if instead of just swapping the `0` with the `4` in our first example (`4  5  8  9   0  1  2  3  6  7`), we also swap any other `ys` numbers that we *know* will come before `4`:
 
 ```
 4  5  8  9   0  1  2  3  6  7
@@ -72,7 +73,7 @@ What if instead of just swapping the `0` with the `4` in our first example, we a
                       !  ! (ys not sorted anymore)
 ```
 
-No dice. The problem is that by doing this we can bring in numbers that are bigger than what will follow them once in `ys` (e.g. `8` and `9` > `6`).
+No dice. The problem is that by doing this we can bring in numbers that are bigger than what will follow them once they are in `ys` (e.g. `8` and `9` > `6`).
 
 Clearly, coming up with simple ideas and trying to "patch" the counterexamples that we find isn't working out (what a surprise!)
 
@@ -88,12 +89,12 @@ I played with ideas to move the elements `<= P` to `xs` while ensuring that they
 
 At this point I decided to read up on the problem a bit more, to see if there were theoretical tools that I was missing to find a solution. I ended up finding resources on the problem itself, with [this stackoverflow question](https://stackoverflow.com/q/2126219) standing out.
 
-Turns out this isn't exactly a trivial problem (one that I'll see in TAOCP Vol. 3!), and likely not one one would encounter in an interview. The stackoverflow answers link to some relatively old papers that address it, and give some very helpful ideas to solve it, from *Kronrod*:
+Turns out this isn't exactly a trivial problem (one that I'll see in TAOCP Vol. 3!), and likely not one one would encounter in an interview. The stackoverflow answers link to some relatively old papers that address it, and give some very helpful high-level ideas to solve it, from *Kronrod*:
 
 - Divide in blocks of `sqrt(N)`;
-- Use last `sqrt(N)` of biggest numbers as buffer;
+- Use last `sqrt(N)` of biggest numbers as a buffer;
 - Sort blocks by their first number;
-- Selection sort has a predictable number of moves (`N`).
+- Remember that selection sort has a predictable number of moves (`N`).
 
 At this point, I stopped reading to try and use those hints to come up with the rest of the algorithm on my own (what follows). The time spent thinking about the problem thankfully proved to be useful, because it was then much more straightforward to combine those hints with the tricks I developed while working on the problem.
 
@@ -101,7 +102,7 @@ For future personal reference, some ideas that I think are pretty neat and could
 
 - Dividing in `sqrt(N)` tasks of `sqrt(N)` elements is a way to get `O(N)`;
 - Keeping a small block of data as an unstructured buffer that we can fix in a "slow" way as a final step is fine (if it's small enough like `sqrt(N)` we can do `O(N^2)` processing on it to stay `O(N)`!);
-- Selection sort of `sqrt(N)` blocks does `sqrt(N)` swaps, which can matter for expensive swaps (e.g. swapping blocks of `sqrt(N)` elements!).
+- Selection sort of `sqrt(N)` blocks does `sqrt(N)` swaps, which can matter for expensive swaps (e.g. swapping blocks of `sqrt(N)` elements!), so it's important to think about the cost of the swaps.
 
 ## High-Level Algorithm
 
@@ -130,7 +131,7 @@ sorted, blocks of 'Z' elements               |           unsorted, 'Z' biggest e
 
 
 
-The trick here is that the setup that we create (having blocks sorted by their first elements) allows us to do step 3 in `O(Z)` for each block, giving us the following time complexities per step:
+The trick here is that the setup that we create (having blocks sorted by their first elements) allows us to do step 3 (grab `Z` smallest unsorted elements) in `O(Z)` for each block, giving us the following time complexities per step:
 
 1. `O(Z)` to grab the `Z` biggest elements;
 2. `O(Z^2) = O(sqrt(N)^2) = O(N)`, because with selection sort we can sort `Z` blocks with `O(Z^2)` comparisons of `O(1)` (comparing the first elements) with `Z` swaps (`O(Z)` to swap a block of `Z` elements), yielding `O(Z^2)` for comparisons + `O(Z^2)` for swaps;
@@ -145,7 +146,7 @@ The code is heavily commented if you want to take a closer look at how this can 
 
 ### 0.5) Setup
 
-Call our array to merge `A`. Compute `Z = floor(sqrt(N))`.
+Call our array to merge `A` (`N = len(A)`). Compute `Z = floor(sqrt(N))`.
 
 Find `ys_start` (first element of `ys`) by going linearly through `A` to find the first unsorted element:
 
@@ -187,8 +188,8 @@ def point_to_kth_biggest(A, xs_start, xs_length, ys_start, ys_length, k):
   to the kth biggest element, while the other one points to the last element
   seen within its subarray part of the k biggest elements.
   
-  In simpler terms, point to the end of xs and ys and move, in descending order,
-  both pointers until we've moved k times.
+  In simpler terms, point to the end of xs and ys and move, in descending order
+  through the array, both pointers until we've moved k times.
   
   Assumes k <= |xs|+|ys| and that xs and ys are sorted.
   """
@@ -206,7 +207,7 @@ def point_to_kth_biggest(A, xs_start, xs_length, ys_start, ys_length, k):
   return (x_ptr, y_ptr)
 ```
 
-We'll also need a rotate function, which we can cleverly implement linearly in-place with `invert`:
+We'll also need a rotate function, which we can cleverly implement linearly in-place with `invert` (learned about this through some stackoverflow answer that I can't find anymore):
 
 ```python
 def rotate_k_left(A, start, length, k):
@@ -315,11 +316,11 @@ xs_start, xs_length, ys_start, ys_length, buffer_start, _ =
 
 Note that this could have been combined in the previous step to only do one rotate (we can compute `new_xs_length` to then compute `xs_overflow` and add it to `xs_top_elements` and do the same for `ys`), but I feel that doing so as a separate step like here keeps the functions pretty contained and with a clear purpose (with the same complexity!)
 
-Now, `buffer` has `< 3Z` elements (`Z + (|X| % Z) + (|Y| % Z) < 3Z`, which is `O(Z)`).
+Now, `buffer` has `< 3Z` elements (`Z + (|X| % Z) + (|Y| % Z) < 3Z`, which still keeps our last buffer-sorting step `O(Z)`).
 
 ### 2) Sort blocks based on first element
 
-To sort our blocks, we use selection sort. It has the nice property that it will do `O(n)` swaps (and each block swap is `O(Z)` (moving the whole block), for a total of `O(Z^2) = O(N)`). Since there are `O(Z)` blocks (`N = sqrt(N)^2 = Z^2` and we divided `N` elements into blocks of `Z` elements, then moved some of those elements to `buffer`, so we have `O(Z)` blocks), selection sort will do `O(Z^2) = O(N)` comparisons. The swap and comparison costs conserve our `O(N)` time complexity requirement.
+To sort our blocks, we use selection sort. It has the nice property that it will do `O(n)` swaps (and each block swap is `O(Z)` (swapping the whole block), for a total of `O(Z^2) = O(N)`). Since there are `O(Z)` blocks in `A` (`N = sqrt(N)^2 = Z^2` and we divided `N` elements into blocks of `Z` elements, then moved some of those elements to `buffer`, so we still have `O(Z)` remaining blocks), selection sort will do `O(Z^2) = O(N)` comparisons. The swap and comparison costs conserve our `O(N)` time complexity requirement.
 
 We implement selection sort as a general function so that we can reuse it both to sort blocks and to sort `buffer` at the end:
 
@@ -362,23 +363,88 @@ swap_block = lambda i, j: swap_k_elements(A, xs_start+i*Z, xs_start+j*Z, k=Z)
 selection_sort(length=num_blocks, compare_fn=compare_first_elem, swap_fn=swap_block)
 ```
 
-Now what's interesting about sorting blocks in this way is that, if we take 2 adjacent blocks after the sort and assume that everything to the left of them is fully sorted (in their final positions in `A`), they are guaranteed to contain the next `Z` smallest elements in the unsorted part of `A`. Why is that?
+Now what's interesting about sorting blocks in this way is that, if we take the first 2 adjacent blocks afterwards and assume that everything to the left of them is fully sorted (in their final positions in `A`, i.e. in the middle of the algorithm), they are guaranteed to contain the next `Z` smallest elements of the unsorted part of `A`. Diagram to help picture that:
 
-- If both blocks are from the same original sorted subarray (assume they are both from `xs` , but the logic holds for `ys` too), then step 2) would not have changed their relative order and they would have remained sorted in their original order.
-  - So, we know that the first block of `Z` elements would be the smallest `Z` elements out of all the remaining `xs`.
-  - Since all the elements in that first block are smaller than the first element of that second block (as per the sort from step 2), we also know that no other `ys` elements could be smaller than any elements in that first block (or else, we would have a `ys` block instead of an `xs` block as our second block!)
-  - This means that this first block is in its final position, and we can skip it (it has the `Z` smallest elements, in order)!
-- If both blocks originate from different sorted subarrays (assume the first block is from `xs` and the second from `ys`, but logic holds both ways), then the first block contains the smallest `Z` remaining elements of `xs` (similar logic as the precedent case) and the second block contains the smallest `Z` remaining elements of `ys`. Thus, the `Z` smallest elements of the two blocks are the `Z` smallest elements of all remaining elements.
+```
+|-----:-----:-----:-----|--a--:--b--|--c--:--d--:--e--:--f--:--g--|-buffer-|
+ ^^^^^^^^^^^^^^^^^^^^^^^|===========|
+   sorted elems of A          ^ contains Z smallest elements of
+        (final)                 U{a, b, ..., f, g}
+```
+
+Why is that?
+
+- If both blocks are from the same original sorted subarray (assume they are both from `xs` , but the logic holds for `ys` too), then step 2 would not have changed their relative order and they would have remained sorted in their original order.
+  - So, we know that the first block of `Z` elements would be the smallest `Z` elements out of all the remaining `xs` (same as the original sorted subarray);
+  - We know that no `ys` element can be smaller than any `xs` element within the first block. This is because the first element of the second `xs` block is bigger than any `xs` element in the first block (retained their order from the original `xs` subarray), and no `ys` element is smaller than the first element from the second block (otherwise the second block would come from `ys`!);
+  - This means that this first block is in its final position, and we can skip it (it has the `Z` smallest elements, in order).
+- If both blocks originate from different sorted subarrays (assume the first block is from `xs` and the second from `ys`, but logic holds both ways), then the first block contains the smallest `Z` remaining elements of `xs` (similar logic as the precedent case) and the second block contains the smallest `Z` remaining elements of `ys` (same idea). Thus, the `Z` smallest elements of the two blocks are the `Z` smallest elements of `U{xs, ys}`.
+
+We'll go over an example in the next section to make this clearer.
 
 ### 3) Grab `Z` smallest unsorted elements for each block
 
-This is where the algorithm gets really elegant.
+This is where the algorithm gets really elegant in my opinion.
 
-We ultimately want to go through `A`, one block at a time, grabbing the `Z` smallest elements out
+We ultimately want to go through `A`, one block at a time, doing a merge (**not** in-place!) between the current block and the next. How can we afford to do it with extra memory? By using our buffer that we created in step 1! There's something that feels very elegant about implementing an in-place algorithm by using the additional-memory version of itself, with a temporary working area of the input data.
 
-TODO
+Let's focus on the implementation first, then go into more detail about why that properly sorts the array `A`.
 
-TODO what happens to the next block when we sort? why does that hold our logic from the 2)?
+Let's start with the implementation of merging with a buffer (notice the similarities with our very first `O(n)` memory naive approach):
+
+``` python
+def merge_into_target(A, xs_start, ys_start, target, length):
+  """Merges the sorted xs and ys (both of same length), swapping
+  with the elements at 'target'.
+  
+  Note that this works even if ys_start (or xs_start) equals target+length, e.g.:
+  |-----------|-----------|----------- ... -----------|-----------|
+  ^ target    ^ ys_start                              ^ xs_start
+  
+  Whenever 'target' reaches ys_start during the merge, the current y pointer is, in
+  the worst case, still at ys_start (if all xs are smaller than all ys). From there,
+  we can't overwrite values from ys, because we'd essentially swap y elements with
+  themselves (current target is always <= current y pointer).
+  
+  Assumptions:
+  - 'target' has enough space to hold 2*length elements;
+  - [target, target+length) does not overlap with xs or ys.
+  """
+  x, y = xs_start, ys_start
+  for i in range(length * 2):
+    xs_exhausted = x >= xs_start + length
+    ys_exhausted = y >= ys_start + length
+    if ys_exhausted or (not xs_exhausted and A[x] < A[y]):
+      A[x], A[target+i] = A[target+i], A[x]
+      x += 1
+    else:
+      A[y], A[target+i] = A[target+i], A[y]
+      y += 1
+```
+
+The comment about the validity of the algorithm even when `target` and `ys` overlap (specifically when `ys_start = target + length`) will matter because we'll be using that property.
+
+So, say that we are looking at a certain block `a` and the next one `b`:
+
+```
+|-----:-----:-----:-----|--a--:--b--|--c--:--d--:--e--:--f--:--g--|-buffer-|
+|======== sorted =======|  ^     ^
+```
+
+Remember: `a` is sorted, `b` is sorted, both of length `Z` (`sqrt(N)`). We want to merge them. We can use our `buffer` as needed (which has a size within `[Z, 3Z)` (at least 1 block, plus `|xs|%Z` and `|ys|%Z`). We don't know that it has at least `2Z` elements (as required by `merge_into_target`), so we'll instead swap `a` (first block) with the start of `buffer`. Then we can use the start of our original `a` as a target directly (that's where we want our merged blocks anyway!) Using our property that it's fine to have our second block be at `target + Z`, we're ready to go:
+
+```python
+# 3) Grab Z smallest unsorted elements for each block.
+for i in range(0, buffer_start - Z, Z):
+  current_block = i
+  next_block = i + Z
+  # Move first block to our buffer to make space for the block-merge output.
+  swap_k_elements(A, start=current_block, target=buffer_start, k=Z)  # O(Z)
+  merge_into_target(A, xs_start=buffer_start, ys_start=next_block,
+                    target=current_block, length=Z)
+```
+
+TODO why that works
 
 ### 4) Sort `buffer`
 

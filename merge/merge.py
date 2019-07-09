@@ -86,17 +86,21 @@ def merge_inplace(A):
                                swap_fn=swap_block)
 
     # 3) Fully sort a block at a time.
-    # TODO(emond): README
-    for block_idx in range(num_blocks-1):
-        current_block_start = block_idx * Z
-        next_block_start = (block_idx + 1) * Z
-        _merge_inplace_with_buffer(A,
-                SubarrayPointers(xs_start=current_block_start, xs_length=Z,
-                                 ys_start=next_block_start, ys_length=Z,
-                                 buffer_start=pointers.buffer_start,
-                                 buffer_length=Z))
+    for i in range(0, pointers.buffer_start - Z, Z):
+        current_block = i
+        next_block = i + Z
+        # Optimization: if the last element of the current block is smaller than
+        # the first element of the next block, there is no work to do (blocks
+        # are already sorted).
+        if A[next_block-1] < A[next_block]: continue
+        # Move first block to our buffer to make space for the output of merging
+        # the two blocks.
+        array_utils.swap_k_elements(A, start=current_block,
+                                    target=pointers.buffer_start, k=Z)
+        _merge_into_target(A, xs_start=pointers.buffer_start,
+                           ys_start=next_block, target=current_block, length=Z)
 
-    # 4) Sort our buffer of big elements.
+    # 4) Sort our buffer of "large" elements.
     # TODO(emond): README
     start = pointers.buffer_start
     compare_buffer_elem = lambda i, j: A[start+i] < A[start+j]
