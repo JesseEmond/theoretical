@@ -107,14 +107,40 @@ def merge_inplace(A):
     # TODO(emond): test
 
 
-def _merge_inplace_with_buffer(A, pointers):
-    """"""
-    pass  # TODO(emond): implement
+def _merge_into_target(A, xs_start, ys_start, target, length):
+    """Merges the sorted xs and ys (both of same length), swapping
+    with the elements at 'target'.
+
+    Note that this works even if ys_start (or xs_start) equals target+length,
+    e.g.:
+    |-----------|-----------|----------- ... -----------|-----------|
+    ^ target    ^ ys_start                              ^ xs_start
+
+    Whenever 'target' reaches ys_start during the merge, the current y pointer
+    is, in the worst case, still at ys_start (if all xs are smaller than
+    all ys). From there, we can't overwrite values from ys, because we'd
+    essentially swap y elements with themselves (i.e. current target is always
+    <= current y pointer).
+
+    Assumptions:
+    - 'target' has enough space to hold 2*length elements;
+    - [target, target+length) does not overlap with xs or ys.
+    """
+    x, y = xs_start, ys_start
+    for i in range(length * 2):
+        xs_exhausted = x >= xs_start + length
+        ys_exhausted = y >= ys_start + length
+        if ys_exhausted or (not xs_exhausted and A[x] < A[y]):
+            A[x], A[target+i] = A[target+i], A[x]
+            x += 1
+        else:
+            A[y], A[target+i] = A[target+i], A[y]
+            y += 1
 
 
 def _point_to_kth_biggest(A, pointers, k):
-    """Point to the end of 'xs' and 'ys' and move, in descending order, both
-    pointers until we've moved k times.
+    """Point to the end of 'xs' and 'ys' and move, in descending order through
+    the array, both pointers until we've moved k times.
     If none of the k biggest elements is in a particular subarray ('xs' or
     'ys'), its pointer will be on start+length of that subarray (right after).
     If a subarray is exhausted, the pointer will be on its start element.
@@ -133,11 +159,10 @@ def _point_to_kth_biggest(A, pointers, k):
     x_pointer = pointers.xs_start + pointers.xs_length
     y_pointer = pointers.ys_start + pointers.ys_length
     for _ in range(k):
-        if x_pointer <= pointers.xs_start:  # 'xs' exhausted
-            y_pointer -= 1
-        elif y_pointer <= pointers.ys_start:  # 'ys' exhausted
-            x_pointer -= 1
-        elif A[y_pointer-1] > A[x_pointer-1]:  # 'ys' has next largest element
+        xs_exhausted = x_pointer <= pointers.xs_start
+        ys_exhausted = y_pointer <= pointers.ys_start
+        if xs_exhausted or (not ys_exhausted and
+                            A[y_pointer-1] > A[x_pointer-1]):  # ys next largest
             y_pointer -= 1
         else:
             x_pointer -= 1
