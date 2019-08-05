@@ -285,54 +285,67 @@ def move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
 We can now get back to how we could move the `Z` biggest elements:
 
 ```python
+def move_k_biggest_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
+                                   k):
+  """TODO"""
+  xs_big_start, ys_big_start = point_to_kth_biggest(A, xs_start, xs_length,
+                                                    ys_start, ys_length, k)
+  
+  # How many elements from xs and ys do we have to move?
+  xs_top_elements = ys_start - xs_big_start
+  ys_top_elements = ys_start + ys_length - ys_big_start
+  (new_xs_start, new_xs_length, new_ys_start, new_ys_length,
+   new_buffer_start, new_buffer_length) = move_last_elements_to_end(
+    	A, xs_start, xs_length, ys_start, ys_length, buffer_length=0,
+        xs_to_move=xs_top_elements, ys_to_move=ys_top_elements)
+  return (new_xs_start, new_xs_length, new_ys_start, new_ys_length,
+          new_buffer_start, new_buffer_length)
+
+
 # (NOT FINAL)
-# Move the Z biggest elements to the end (our buffer).
-xs_big_start, ys_big_start = point_to_kth_biggest(A, xs_start, xs_length,
-                                                  ys_start, ys_length, k=Z)
-# How many elements from xs and ys do we have to move?
-xs_top_elements = ys_start - xs_big_start
-ys_top_elements = ys_start + ys_length - ys_big_start
-xs_start, xs_length, ys_start, ys_length, buffer_start, buffer_length =
-	move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
-                              buffer_length=0,
-                              xs_to_move=xs_top_elements, ys_to_move=ys_top_elements)
+(xs_start, xs_length, ys_start, ys_length,
+ buffer_start, buffer_length) = move_k_biggest_elements_to_end(A, xs_start, xs_length,
+                                                               ys_start, ys_length,
+                                                               k=Z)
 ```
 
-In actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure.
+In actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure (you can see why!)
 
 If we did it this way, `buffer` would now have `Z` elements. However, in order to make our next step work (making `xs` and `ys` multiples of `Z`), we'll move more than `Z` elements in the end, and we'll explain why.
 
 ### 1.5) Make `xs` and `ys` multiples of `Z`
 
-So, suppose we moved `Z` elements and we wanted to make `xs` and `ys` multiples of `Z` (to make the rest of the algorithm simpler). My initial thought was to just move the `(mod Z)` leftover from each subarray to the end, but imagine this array:
+So, suppose we moved `Z` elements to the end and we wanted to make `xs` and `ys` multiples of `Z` (to make the rest of the algorithm simpler by knowing all blocks have `Z` elements). My initial thought was to just move the `(mod Z)` leftover from each subarray to the end, but imagine this case:
 
 ```
-2 3 4 5 6 7 8 9   1       move Z=sqrt(9)=3 biggest elements to the end, we get:
-^xs               ^ys
-2 3 4 5 6   1    7 8 9    if we move (mod 3) elements from each to the end:
-^xs         ^ys  ^buf
+2 3 4 5 6 7 8 9   1
+^xs               ^ys     move Z=sqrt(9)=3 biggest elements to the end, we get:
+2 3 4 5 6   1    7 8 9
+^xs         ^ys  ^buf     if we move (mod 3) elements from 'xs' and 'ys' to the end:
 2 3 4   5 6 1 7 8 9
-^xs     ^buf!
+^xs     ^buf
             !!! 'buffer' has '1', smaller than elements in 'xs'! 
 ```
 
  We can't guarantee that `buffer` has the `Z` biggest elements anymore, that's a problem. So that's not going to work.
 
-Now, to make the rest of the algorithm simpler, we'll guarantee that `xs` and `ys` are exact multiples of `Z` by moving their `mod Z` "overflow" at the end:
+The problem ultimately comes from that fact that we're trying to "push" the leftover `xs` and `ys` elements to `buffer` (elements that may not "fit" in `buffer`, because they're not the largest elements of `A`). Instead, we should use `buffer` as the set of largest elements of `A` that we can take from, to pad `xs` and `ys` to be multiples of `Z`. Let's change our previous step to move `3Z-2` elements to the end instead (we want at least a `buffer` of `Z` plus max `Z-1` elements to pad `xs`, and `Z-1` elements to pad `ys` (`Z + (Z-1) + (Z-1) = 3Z-2`)):
 
 ```python
-# 1.5) Make xs and ys multiples of Z.
-xs_overflow = xs_length % Z
-ys_overflow = ys_length % Z
-xs_start, xs_length, ys_start, ys_length, buffer_start, _ =
-	move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
-                              buffer_start, buffer_length,
-                              xs_to_move=xs_overflow, ys_to_move=ys_overflow)
+# Move Z + 2(Z-1) biggest elements to the end (our buffer + elements to pad xs & ys).
+(xs_start, xs_length, ys_start, ys_length,
+ buffer_start, buffer_length) = move_k_biggest_elements_to_end(A, xs_start, xs_length,
+                                                               ys_start, ys_length,
+                                                               k=3*Z-2)
 ```
 
-Note that this could have been combined in the previous step to only do one rotate (we can compute `new_xs_length` to then compute `xs_overflow` and add it to `xs_top_elements` and do the same for `ys`), but I feel that doing so as a separate step like here keeps the functions pretty contained and with a clear purpose (with the same complexity!)
+TODO grab elements for xs and ys via rotate, whatever we grab will be > (good), but need to make sure it's sorted.
 
-Now, `buffer` has `< 3Z` elements (`Z + (|X| % Z) + (|Y| % Z) < 3Z`, which still keeps our last buffer-sorting step `O(Z)`).
+
+
+TODO note about placing elements in order same problem as merge inplace
+
+Now, `buffer` has `< 3Z` elements (`Z + (-|X|) % Z + (-|Y|) % Z < 3Z`, which still keeps our buffer-sorting steps `O(Z)`).
 
 ### 2) Sort blocks based on first element
 
