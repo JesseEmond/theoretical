@@ -1,5 +1,4 @@
-"""
-Merge function and related helpers to sort an array that has two sorted
+"""Merge function and related helpers to sort an array that has two sorted
 subarrays in-place.
 
 General notation:
@@ -18,10 +17,6 @@ import copy
 import math
 
 
-# TODO(emond): change APIs returning pointers to change them in-place... already
-# changing A!
-
-
 class SubarrayPointers:
     """Indices to both sorted subarrays within A, in order, 'xs', 'ys' and
     'buffer' (unsorted)."""
@@ -35,9 +30,8 @@ class SubarrayPointers:
         self.buffer_start = buffer_start
         self.buffer_length = buffer_length
     def __eq__(self, other):
-        if isinstance(other, SubarrayPointers):
-            return self._value() == other._value()
-        return NotImplementedError
+        return (self.__class__ == other.__class__ and
+                self._value() == other._value())
     def __repr__(self):
         return "xs:[%d, %d) ys:[%d, %d) buf:[%d, %d)" % (
                 self.xs_start, self.xs_start+self.xs_length,
@@ -55,21 +49,23 @@ class SubarrayPointers:
 
 
 
-def merge_inplace(A, verbose=False):
-    """Takes an array A that is assumed to have two subarrays that are sorted,
-    and sorts it in-place.
+def merge_inplace(A, start, length, verbose=False):
+    """Takes a subarray within A that is assumed to have two subarrays that are
+    sorted, and sorts it in-place.
 
     Complexity:
         - O(len(A)) time
         - O(1) space
     """
-    N = len(A)
+    # TODO(emond): test relative
+    N = length
     Z = int(math.sqrt(N))
-    ys_start = array_utils.find_first_unsorted_index(A, 0, N)
-    if ys_start == len(A): return  # already sorted!
-    pointers = SubarrayPointers(xs_start=0, xs_length=ys_start,
-                                ys_start=ys_start, ys_length=N-ys_start,
-                                buffer_start=N,
+    ys_start = array_utils.find_first_unsorted_index(A, start, N)
+    if ys_start == N: return  # already sorted!
+    pointers = SubarrayPointers(xs_start=start,xs_length=ys_start - start,
+                                ys_start=ys_start,
+                                ys_length=start + N - ys_start,
+                                buffer_start=start + N,
                                 buffer_length=0)
     assert array_utils.is_sorted(A, pointers.xs_start,
                                  pointers.xs_length) and \
@@ -81,7 +77,7 @@ def merge_inplace(A, verbose=False):
 
     # 1) Move (at least) the 'Z' biggest elements to 'buffer'.
     # TODO(emond): comment about 3Z-2
-    pointers = _move_k_biggest_elements_to_end(A, pointers, k=3*Z-2)
+    _move_k_biggest_elements_to_end(A, pointers, k=3*Z-2)
     _sort_buffer(A, pointers)
     if verbose: print("1.0) move 3Z-2 to end + sort: %s" % pointers.show(A))
     _make_multiples_of_k(A, pointers, k=Z)
@@ -93,7 +89,7 @@ def merge_inplace(A, verbose=False):
                       pointers.show(A))
 
     # 3) Fully sort a block at a time.
-    for i in range(0, pointers.buffer_start - Z, Z):
+    for i in range(pointers.xs_start, pointers.buffer_start - Z, Z):
         current_block = i
         next_block = i + Z
         # Optimization: if the last element of the current block is smaller than
@@ -113,6 +109,19 @@ def merge_inplace(A, verbose=False):
     # TODO(emond): README
     _sort_buffer(A, pointers)
     if verbose: print("4) sort buffer: %s" % pointers.show(A))
+    assert array_utils.is_sorted(A, start, length)
+
+
+def merge_sort_inplace(A):
+    """TODO(emond): doc"""
+    # TODO(emond): more tests
+    size = 2  # powers of 2
+    while size < len(A):  # lg(len(A)) iterations
+        for i in range(size, len(A), size):  # goes over all elements of A
+            previous = i - size
+            length = min(size*2, len(A)-previous)
+            merge_inplace(A, start=previous, length=length)
+        size *= 2
     assert array_utils.is_sorted(A, 0, len(A))
 
 
@@ -181,12 +190,7 @@ def _point_to_kth_biggest(A, pointers, k):
 def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
     """Moves the ends of both sorted subarrays to the end of A.
     Takes the last 'xs_to_move' elements from 'xs' and the last 'ys_to_move'
-    elements from 'ys' and moves them all after 'ys'.
-    Returns the new pointers for the adjusted 'xs', 'ys', and 'buffer' sections.
-    
-    Returns:
-        A SubarrayPointers object, with the pointers to the modified 'xs', 'ys',
-        and 'buffer' regions set.
+    elements from 'ys' and moves them all after 'ys'. Updates the pointers.
 
     Complexity:
         - O(|ys| + |xs|) time
@@ -194,13 +198,6 @@ def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
     """
     assert pointers.xs_length >= xs_to_move and pointers.ys_length >= ys_to_move
     # TODO(emond): update README to have this instead
-    # What will my new xs and ys look like?
-    new_xs_start = pointers.xs_start
-    new_xs_length = pointers.xs_length - xs_to_move
-    new_ys_start = new_xs_start + new_xs_length
-    new_ys_length = pointers.ys_length - ys_to_move
-    new_buffer_start = new_ys_start + new_ys_length
-    new_buffer_length = pointers.buffer_length + xs_to_move + ys_to_move
     # Rotate the last elements of 'xs' that belong in 'buffer' so that they're
     # on the right of the new 'ys', starting from:
     # |-----xs-----:--big-xs--|-----ys-----:--big-ys--|
@@ -208,32 +205,26 @@ def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
     # to get:
     # |-----xs-----|-----ys-----|--big-xs--:--big-ys--|
     #                            ^^^^^^^ buffer ^^^^^^
-    array_utils.rotate_k_left(A, start=new_ys_start,
-                              length=xs_to_move + new_ys_length,
+    pointers.xs_length -= xs_to_move
+    pointers.ys_start -= xs_to_move
+    pointers.ys_length -= ys_to_move
+    pointers.buffer_start -= xs_to_move + ys_to_move
+    pointers.buffer_length += xs_to_move + ys_to_move
+    array_utils.rotate_k_left(A, start=pointers.ys_start,
+                              length=xs_to_move + pointers.ys_length,
                               k=xs_to_move)
-    return SubarrayPointers(xs_start=new_xs_start,
-                            xs_length=new_xs_length,
-                            ys_start=new_ys_start,
-                            ys_length=new_ys_length,
-                            buffer_start=new_buffer_start,
-                            buffer_length=new_buffer_length)
 
 
 def _move_k_biggest_elements_to_end(A, pointers, k):
     """Moves the k biggest elements from A (at the end of 'xs' and 'ys') after
-    'ys', to make up a new 'buffer' section (unsorted). Returns new pointers to
-    the updated 'xs', 'ys', and 'buffer' sections.
-
-    Returns:
-        A SubarrayPointers object, with the pointers to the modified 'xs', 'ys',
-        and new 'buffer' regions set.
+    'ys', to make up a new 'buffer' section (unsorted). Updates the pointers.
 
     Guarantees after calling:
-        - [new_xs_start, new_ys_start) will be sorted, and the new 'xs';
-        - [new_ys_start, buffer_start] will be sorted, and the new 'ys';
+        - [xs_start, ys_start) will be sorted, and the new 'xs';
+        - [ys_start, buffer_start) will be sorted, and the new 'ys';
         - [buffer_start, buffer_start+buffer_length) has the top k biggest
-          elements from [new_xs_start, buffer_start), with no guarantees about
-          their order.
+          elements from [xs_start, buffer_start+buffer_length), with no
+          guarantees about their order.
 
     Complexity:
         - O(|ys| + |xs|) time
@@ -245,8 +236,8 @@ def _move_k_biggest_elements_to_end(A, pointers, k):
     xs_biggest_length = pointers.ys_start - xs_biggest_start
     ys_biggest_length = (pointers.ys_start + pointers.ys_length
                          - ys_biggest_start)
-    return _move_last_elements_to_end(A, pointers, xs_biggest_length,
-                                      ys_biggest_length)
+    _move_last_elements_to_end(A, pointers, xs_biggest_length,
+                               ys_biggest_length)
 
 
 def _make_multiples_of_k(A, pointers, k):
@@ -259,9 +250,6 @@ def _make_multiples_of_k(A, pointers, k):
     sorted 'xs' and 'ys' as multiple of k elements, while ensuring that we still
     end up with at least k "big" elements. 3Z-2 comes from:
     Z (want min Z big elements) + Z-1 (max of |xs|%Z) + Z-1 (max of |ys|%Z)
-
-    Returns:
-        new_pointers
 
     Assumptions:
         - xs_biggest_length + ys_biggest_length >= 3*k-2

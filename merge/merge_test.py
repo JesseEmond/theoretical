@@ -2,7 +2,7 @@ import unittest
 from array_utils import is_sorted
 from merge import (_point_to_kth_biggest, _merge_into_target,
                    _move_k_biggest_elements_to_end, _move_last_elements_to_end,
-                   merge_inplace, SubarrayPointers)
+                   merge_inplace, merge_sort_inplace, SubarrayPointers)
 
 
 class PointToKthBiggestTests(unittest.TestCase):
@@ -64,10 +64,9 @@ class MoveLastElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_last_elements_to_end(A, pointers,
-                                                  xs_to_move=2, ys_to_move=3)
+        _move_last_elements_to_end(A, pointers, xs_to_move=2, ys_to_move=3)
         self.assertEqual(A, [100, 101, 5, 7, 1, 3, 9, 10, 4, 6, 8, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=2,
                                           ys_start=4, ys_length=2,
                                           buffer_start=6, buffer_length=5))
@@ -78,10 +77,9 @@ class MoveLastElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_last_elements_to_end(A, pointers,
-                                                  xs_to_move=2, ys_to_move=0)
+        _move_last_elements_to_end(A, pointers, xs_to_move=2, ys_to_move=0)
         self.assertEqual(A, [100, 101, 5, 7, 1, 3, 4, 6, 8, 9, 10, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=2,
                                           ys_start=4, ys_length=5,
                                           buffer_start=9, buffer_length=2))
@@ -92,10 +90,9 @@ class MoveLastElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_last_elements_to_end(A, pointers,
-                                                  xs_to_move=0, ys_to_move=3)
+        _move_last_elements_to_end(A, pointers, xs_to_move=0, ys_to_move=3)
         self.assertEqual(A, [100, 101, 5, 7, 9, 10, 1, 3, 4, 6, 8, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=4,
                                           ys_start=6, ys_length=2,
                                           buffer_start=8, buffer_length=3))
@@ -106,10 +103,9 @@ class MoveLastElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_last_elements_to_end(A, pointers,
-                                                  xs_to_move=4, ys_to_move=5)
+        _move_last_elements_to_end(A, pointers, xs_to_move=4, ys_to_move=5)
         self.assertEqual(A, [100, 101, 5, 7, 9, 10, 1, 3, 4, 6, 8, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=0,
                                           ys_start=2, ys_length=0,
                                           buffer_start=2, buffer_length=9))
@@ -120,10 +116,9 @@ class MoveLastElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_last_elements_to_end(A, pointers,
-                                                  xs_to_move=0, ys_to_move=0)
+        _move_last_elements_to_end(A, pointers, xs_to_move=0, ys_to_move=0)
         self.assertEqual(A, [100, 101, 5, 7, 9, 10, 1, 3, 4, 6, 8, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=4,
                                           ys_start=6, ys_length=5,
                                           buffer_start=11, buffer_length=0))
@@ -135,11 +130,10 @@ class MoveLastElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=2)
-        new_pointers = _move_last_elements_to_end(A, pointers,
-                                                  xs_to_move=2, ys_to_move=3)
+        _move_last_elements_to_end(A, pointers, xs_to_move=2, ys_to_move=3)
         self.assertEqual(A, [100, 101, 5, 7, 1, 3, 9, 10, 4, 6, 8, 15, 16,
                              30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=2,
                                           ys_start=4, ys_length=2,
                                           buffer_start=6, buffer_length=7))
@@ -153,9 +147,9 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=3)
+        _move_k_biggest_elements_to_end(A, pointers, k=3)
         self.assertEqual(A, [100, 101, 5, 7, 1, 3, 4, 6, 9, 10, 8, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=2,
                                           ys_start=4, ys_length=4,
                                           buffer_start=8, buffer_length=3))
@@ -166,9 +160,9 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=3)
+        _move_k_biggest_elements_to_end(A, pointers, k=3)
         self.assertEqual(A, [100, 101, 5, 1, 3, 4, 6, 7, 8, 9, 10, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=1,
                                           ys_start=3, ys_length=5,
                                           buffer_start=8, buffer_length=3))
@@ -179,9 +173,9 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=3)
+        _move_k_biggest_elements_to_end(A, pointers, k=3)
         self.assertEqual(A, [100, 101, 4, 5, 6, 7, 1, 3, 8, 9, 10, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=4,
                                           ys_start=6, ys_length=2,
                                           buffer_start=8, buffer_length=3))
@@ -192,9 +186,9 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=5)
+        _move_k_biggest_elements_to_end(A, pointers, k=5)
         self.assertEqual(A, [100, 101, 4, 5, 1, 3, 6, 7, 8, 9, 10, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=2,
                                           ys_start=4, ys_length=2,
                                           buffer_start=6, buffer_length=5))
@@ -205,10 +199,10 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=7,
                                     ys_start=9, ys_length=5,
                                     buffer_start=14, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=6)
+        _move_k_biggest_elements_to_end(A, pointers, k=6)
         self.assertEqual(A, [100, 101, 4, 5, 6, 7, 1, 3, 11, 12, 13, 8, 9, 10,
                              30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=4,
                                           ys_start=6, ys_length=2,
                                           buffer_start=8, buffer_length=6))
@@ -219,9 +213,9 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=3,
                                     buffer_start=9, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=5)
+        _move_k_biggest_elements_to_end(A, pointers, k=5)
         self.assertEqual(A, [100, 101, 1, 2, 4, 5, 6, 7, 3, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=0,
                                           ys_start=2, ys_length=2,
                                           buffer_start=4, buffer_length=5))
@@ -232,9 +226,9 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=3,
                                     ys_start=5, ys_length=4,
                                     buffer_start=9, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=5)
+        _move_k_biggest_elements_to_end(A, pointers, k=5)
         self.assertEqual(A, [100, 101, 1, 2, 3, 4, 5, 6, 7, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=2,
                                           ys_start=4, ys_length=0,
                                           buffer_start=4, buffer_length=5))
@@ -245,9 +239,9 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
         pointers = SubarrayPointers(xs_start=2, xs_length=4,
                                     ys_start=6, ys_length=5,
                                     buffer_start=11, buffer_length=0)
-        new_pointers = _move_k_biggest_elements_to_end(A, pointers, k=0)
+        _move_k_biggest_elements_to_end(A, pointers, k=0)
         self.assertEqual(A, [100, 101, 4, 5, 6, 7, 1, 3, 8, 9, 10, 30, 31, 32])
-        self.assertEqual(new_pointers,
+        self.assertEqual(pointers,
                          SubarrayPointers(xs_start=2, xs_length=4,
                                           ys_start=6, ys_length=5,
                                           buffer_start=11, buffer_length=0))
@@ -273,31 +267,31 @@ class MergeIntoTargetTests(unittest.TestCase):
 class MergeInplaceTests(unittest.TestCase):
     def test_evens_left_odds_right(self):
         A = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]
-        merge_inplace(A)
+        merge_inplace(A, start=0, length=len(A))
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     def test_already_sorted(self):
         A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        merge_inplace(A)
+        merge_inplace(A, start=0, length=len(A))
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     def test_evens_right_odds_left(self):
         A = [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]
-        merge_inplace(A)
+        merge_inplace(A, start=0, length=len(A))
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     def test_one_big_elem_left(self):
         A = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8]
-        merge_inplace(A)
+        merge_inplace(A, start=0, length=len(A))
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     def test_one_small_elem_right(self):
         A = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-        merge_inplace(A)
+        merge_inplace(A, start=0, length=len(A))
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     def test_one_small_elem_left(self):
         A = [4, 0, 1, 2, 3, 5, 6, 7, 8, 9]
-        merge_inplace(A)
+        merge_inplace(A, start=0, length=len(A))
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     def test_empty_array(self):
         A = []
-        merge_inplace(A)
+        merge_inplace(A, start=0, length=len(A))
         self.assertEqual(A, [])
     def test_odds_left_evens_right_many_sizes(self):
         N = 50
@@ -306,8 +300,14 @@ class MergeInplaceTests(unittest.TestCase):
                 left = list(range(1, left_length * 2, 2))
                 right = list(range(0, right_length * 2, 2))
                 A = list(left + right)
-                merge_inplace(A)
+                merge_inplace(A, start=0, length=len(A))
                 self.assertEqual(A, sorted(left + right))
+
+class MergeSortInplaceTests(unittest.TestCase):
+    def test_already_sorted(self):
+        A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        merge_sort_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
 
 if __name__ == "__main__":
