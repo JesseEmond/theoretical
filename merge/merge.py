@@ -76,7 +76,10 @@ def merge_inplace(A, start, length, verbose=False):
     if verbose: print("Start: %s Z=%d" % (pointers.show(A), Z))
 
     # 1) Move (at least) the 'Z' biggest elements to 'buffer'.
-    # TODO(emond): comment about 3Z-2
+    # We need to pad xs and ys with the biggest elements to become multiples of
+    # Z while keeping a resulting buffer of at least Z elements, so take Z
+    # largest elements (buffer) + (Z-1) (max xs padding) + (Z-1) (max ys
+    # padding) = 3Z-2.
     _move_k_biggest_elements_to_end(A, pointers, k=3*Z-2)
     _sort_buffer(A, pointers)
     if verbose: print("1.0) move 3Z-2 to end + sort: %s" % pointers.show(A))
