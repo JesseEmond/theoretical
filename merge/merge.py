@@ -14,7 +14,12 @@ General notation:
 """
 
 import array_utils
+import copy
 import math
+
+
+# TODO(emond): change APIs returning pointers to change them in-place... already
+# changing A!
 
 
 class SubarrayPointers:
@@ -42,10 +47,15 @@ class SubarrayPointers:
     def _value(self):
         return (self.xs_start, self.xs_length, self.ys_start, self.ys_length,
                 self.buffer_start, self.buffer_length)
+    def show(self, A):
+        return "xs: %s  ys: %s  buf: %s" % (
+                A[self.xs_start:self.xs_start + self.xs_length],
+                A[self.ys_start:self.ys_start + self.ys_length],
+                A[self.buffer_start:self.buffer_start + self.buffer_length])
 
 
 
-def merge_inplace(A):
+def merge_inplace(A, verbose=False):
     """Takes an array A that is assumed to have two subarrays that are sorted,
     and sorts it in-place.
 
@@ -57,10 +67,9 @@ def merge_inplace(A):
     Z = int(math.sqrt(N))
     ys_start = array_utils.find_first_unsorted_index(A, 0, N)
     if ys_start == len(A): return  # already sorted!
-    xs_length = ys_start
-    pointers = SubarrayPointers(xs_start=0, xs_length=xs_length,
-                                ys_start=ys_start, ys_length=N-xs_length,
-                                buffer_start=ys_start+ys_length,
+    pointers = SubarrayPointers(xs_start=0, xs_length=ys_start,
+                                ys_start=ys_start, ys_length=N-ys_start,
+                                buffer_start=N,
                                 buffer_length=0)
     assert array_utils.is_sorted(A, pointers.xs_start,
                                  pointers.xs_length) and \
@@ -68,22 +77,20 @@ def merge_inplace(A):
                                  pointers.ys_length), \
            "Expected an array with two sorted subarrays."
 
-    # 1) Move 'Z' biggest elements to 'buffer'.
-    pointers = _move_k_biggest_elements_to_end(A, pointers, Z)
+    if verbose: print("Start: %s Z=%d" % (pointers.show(A), Z))
 
-    # 1.5) Make 'xs' and 'ys' multiples of 'Z'.
-    xs_overflow = pointers.xs_length % Z
-    ys_overflow = pointers.ys_length % Z
-    pointers = _move_last_elements_to_end(A, pointers, xs_overflow, ys_overflow)
+    # 1) Move (at least) the 'Z' biggest elements to 'buffer'.
+    # TODO(emond): comment about 3Z-2
+    pointers = _move_k_biggest_elements_to_end(A, pointers, k=3*Z-2)
+    _sort_buffer(A, pointers)
+    if verbose: print("1.0) move 3Z-2 to end + sort: %s" % pointers.show(A))
+    _make_multiples_of_k(A, pointers, k=Z)
+    if verbose: print("1.1) make multiples of Z: %s" % pointers.show(A))
 
     # 2) Sort the blocks according to their first elements.
-    num_blocks = (pointers.xs_length + pointers.ys_length) // Z
-    start = pointers.xs_start
-    compare_first_elem = lambda i, j: A[start+i] < A[start+j]
-    swap_block = lambda i, j: array_utils.swap_k_elements(A, start+i*Z,
-                                                          start+j*Z, k=Z)
-    array_utils.selection_sort(length=num_blocks, compare_fn=compare_first_elem,
-                               swap_fn=swap_block)
+    _sort_blocks(A, pointers, Z)
+    if verbose: print("2) sort blocks based on first elements: %s" %
+                      pointers.show(A))
 
     # 3) Fully sort a block at a time.
     for i in range(0, pointers.buffer_start - Z, Z):
@@ -99,16 +106,14 @@ def merge_inplace(A):
                                     target=pointers.buffer_start, k=Z)
         _merge_into_target(A, xs_start=pointers.buffer_start,
                            ys_start=next_block, target=current_block, length=Z)
+        if verbose: print("3.%d) sort block #%d: %s" % (i, i, pointers.show(A)))
+    if verbose: print("3) sort blocks one at a time : %s" % pointers.show(A))
 
     # 4) Sort our buffer of "large" elements.
     # TODO(emond): README
-    start = pointers.buffer_start
-    compare_buffer_elem = lambda i, j: A[start+i] < A[start+j]
-    def swap_buffer_elem(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
-    array_utils.selection_sort(length=poiners.buffer_length,
-                               compare_fn=compare_buffer_elem,
-                               swap_fn=swap_buffer_elem)
-    # TODO(emond): test
+    _sort_buffer(A, pointers)
+    if verbose: print("4) sort buffer: %s" % pointers.show(A))
+    assert array_utils.is_sorted(A, 0, len(A))
 
 
 def _merge_into_target(A, xs_start, ys_start, target, length):
@@ -118,7 +123,7 @@ def _merge_into_target(A, xs_start, ys_start, target, length):
     Note that this works even if ys_start (or xs_start) equals target+length,
     e.g.:
     |-----------|-----------|----------- ... -----------|-----------|
-    ^ target    ^ ys_start                              ^ xs_start
+     ^ target    ^ ys_start                              ^ xs_start
 
     Whenever 'target' reaches ys_start during the merge, the current y pointer
     is, in the worst case, still at ys_start (if all xs are smaller than
@@ -242,3 +247,67 @@ def _move_k_biggest_elements_to_end(A, pointers, k):
                          - ys_biggest_start)
     return _move_last_elements_to_end(A, pointers, xs_biggest_length,
                                       ys_biggest_length)
+
+
+def _make_multiples_of_k(A, pointers, k):
+    """Modifies 'xs' and 'ys' to have a multiple of 'k' elements.
+    TODO(emond): update all
+
+    Assumes that one already ran _point_to_kth_biggest before with a 'k' of at
+    least 3k-2 (k in this method's context). In the context of the merge, of
+    3Z-2. This is because this function takes from the big elements to construct
+    sorted 'xs' and 'ys' as multiple of k elements, while ensuring that we still
+    end up with at least k "big" elements. 3Z-2 comes from:
+    Z (want min Z big elements) + Z-1 (max of |xs|%Z) + Z-1 (max of |ys|%Z)
+
+    Returns:
+        new_pointers
+
+    Assumptions:
+        - xs_biggest_length + ys_biggest_length >= 3*k-2
+    Guarantees:
+        - xs, ys will remain sorted, but ys might move
+        - new_xs_biggest_length + new_ys_biggest_length >= k
+    """
+    # TODO(emond): TEST
+    # How many more elements do we need to reach %k==0?
+    xs_needs = (-pointers.xs_length) % k
+    ys_needs = (-pointers.ys_length) % k
+    # Rotate the (sorted) smallest elements of 'buffer' to extend xs and ys as
+    # needed. This way, we know that 'buffer-remainder' still has the biggest
+    # elements, and xs and ys get elements that preserve their sorted order.
+    # |-----xs-----|-----ys-----|--ys_needs--|--xs_needs--|-buffer-remainder-|
+    #              |---------------------rotate==========>|
+    # to get:
+    # |-----xs-----|--xs_needs--|-----ys-----|--ys_needs--|-buffer-remainder-|
+    #                                                      ^^^^^ buffer ^^^^^
+    array_utils.rotate_k_right(A, start=pointers.xs_start + pointers.xs_length,
+                               length=pointers.ys_length + xs_needs + ys_needs,
+                               k=xs_needs)
+    pointers.xs_length += xs_needs
+    pointers.ys_start += xs_needs
+    pointers.ys_length += ys_needs
+    pointers.buffer_start += xs_needs + ys_needs
+    pointers.buffer_length -= xs_needs + ys_needs
+
+def _sort_buffer(A, pointers):
+    """Sorts a the buffer subarray in-place in O(buffer_length^2)."""
+    start = pointers.buffer_start
+    compare_buffer_elem = lambda i, j: A[start+i] < A[start+j]
+    def swap_buffer_elem(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
+    array_utils.selection_sort(length=pointers.buffer_length,
+                               compare_fn=compare_buffer_elem,
+                               swap_fn=swap_buffer_elem)
+
+def _sort_blocks(A, pointers, Z):
+    """TODO(emond): document"""
+    assert (pointers.xs_length + pointers.ys_length) % Z == 0
+    num_blocks = (pointers.xs_length + pointers.ys_length) // Z
+    start = pointers.xs_start
+    compare_first_elem = lambda i, j: A[start+i*Z] < A[start+j*Z]
+    swap_block = lambda i, j: array_utils.swap_k_elements(A,
+                                                          start=start+i*Z,
+                                                          k=Z,
+                                                          target=start+j*Z)
+    array_utils.selection_sort(length=num_blocks, compare_fn=compare_first_elem,
+                               swap_fn=swap_block)

@@ -1,6 +1,7 @@
 import unittest
 from array_utils import (find_first_unsorted_index, swap_k_elements,
-                         rotate_k_left, invert, selection_sort, is_sorted)
+                         rotate_k_left, rotate_k_right, invert, selection_sort,
+                         is_sorted)
 
 
 class FindFirstUnsortedIndexTests(unittest.TestCase):
@@ -32,6 +33,10 @@ class RotateKLeftTests(unittest.TestCase):
         A = [0, 1, 2, 3, 4, 5]
         rotate_k_left(A, 0, len(A), k=0)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5])
+    def test_rotate_length_0_identity(self):
+        A = [0, 1, 2, 3, 4, 5]
+        rotate_k_left(A, 0, length=0, k=3)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5])
     def test_rotate_n_identity(self):
         A = [0, 1, 2, 3, 4, 5]
         rotate_k_left(A, 0, len(A), k=len(A))
@@ -48,6 +53,32 @@ class RotateKLeftTests(unittest.TestCase):
         A = [0, 1, 2, 3, 4, 5, 6]
         rotate_k_left(A, start=2, length=3, k=1)
         self.assertEqual(A, [0, 1, 3, 4, 2, 5, 6])
+
+class RotateKRightTests(unittest.TestCase):
+    def test_rotate_0_identity(self):
+        A = [0, 1, 2, 3, 4, 5]
+        rotate_k_right(A, 0, len(A), k=0)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5])
+    def test_rotate_length_0_identity(self):
+        A = [0, 1, 2, 3, 4, 5]
+        rotate_k_right(A, 0, length=0, k=3)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5])
+    def test_rotate_n_identity(self):
+        A = [0, 1, 2, 3, 4, 5]
+        rotate_k_right(A, 0, len(A), k=len(A))
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5])
+    def test_rotate_1(self):
+        A = [0, 1, 2, 3, 4, 5]
+        rotate_k_right(A, 0, len(A), k=1)
+        self.assertEqual(A, [5, 0, 1, 2, 3, 4])
+    def test_rotate_3(self):
+        A = [0, 1, 2, 3, 4, 5]
+        rotate_k_right(A, 0, len(A), k=3)
+        self.assertEqual(A, [3, 4, 5, 0, 1, 2])
+    def test_rotate_1_middle(self):
+        A = [0, 1, 2, 3, 4, 5, 6]
+        rotate_k_right(A, start=2, length=3, k=1)
+        self.assertEqual(A, [0, 1, 4, 2, 3, 5, 6])
 
 class InvertTests(unittest.TestCase):
     def test_invert_full_array(self):

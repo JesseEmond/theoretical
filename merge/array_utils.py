@@ -96,10 +96,15 @@ def rotate_k_left(A, start, length, k):
         Finally invert(0, n):
             x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}
     """
-    k %= length  # prevent index out of bounds for looping ks
+    if length == 0: return  # prevent % 0
+    k %= length  # rotate(m*length + i) == rotate(i)
     invert(A, start, k)  # O(k) = O(length)
     invert(A, start+k, length-k)  # O(length-k) = O(length)
     invert(A, start, length)  # O(length)
+
+def rotate_k_right(A, start, length, k):
+    """Same as rotate_k_left, but to the right."""
+    return rotate_k_left(A, start, length, -k)
 
 def invert(A, start, length):
     """Inverts the region [start, start+length) within A.

@@ -2,7 +2,7 @@ import unittest
 from array_utils import is_sorted
 from merge import (_point_to_kth_biggest, _merge_into_target,
                    _move_k_biggest_elements_to_end, _move_last_elements_to_end,
-                   SubarrayPointers)
+                   merge_inplace, SubarrayPointers)
 
 
 class PointToKthBiggestTests(unittest.TestCase):
@@ -269,6 +269,45 @@ class MergeIntoTargetTests(unittest.TestCase):
         A = [99] * 4 + [1, 3, 5, 7] + [2, 4, 6, 8]
         _merge_into_target(A, xs_start=8, ys_start=4, length=4, target=0)
         self.assertEqual(A, [1, 2, 3, 4, 5, 6, 7, 8] + [99] * 4)
+
+class MergeInplaceTests(unittest.TestCase):
+    def test_evens_left_odds_right(self):
+        A = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]
+        merge_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    def test_already_sorted(self):
+        A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        merge_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    def test_evens_right_odds_left(self):
+        A = [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]
+        merge_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    def test_one_big_elem_left(self):
+        A = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+        merge_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    def test_one_small_elem_right(self):
+        A = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+        merge_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    def test_one_small_elem_left(self):
+        A = [4, 0, 1, 2, 3, 5, 6, 7, 8, 9]
+        merge_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    def test_empty_array(self):
+        A = []
+        merge_inplace(A)
+        self.assertEqual(A, [])
+    def test_odds_left_evens_right_many_sizes(self):
+        N = 50
+        for left_length in range(N):
+            for right_length in range(N):
+                left = list(range(1, left_length * 2, 2))
+                right = list(range(0, right_length * 2, 2))
+                A = list(left + right)
+                merge_inplace(A)
+                self.assertEqual(A, sorted(left + right))
 
 
 if __name__ == "__main__":

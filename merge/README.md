@@ -18,7 +18,7 @@ Would have to be sorted in `O(N)`, without an additional memory requirement that
 
 `0  1  2  3  4  5  6  7  8  9  10`
 
-*Note: by "in-place" and "`O(1)` extra space", I really mean "a constant number of pointers into the array" ([LSPACE](https://en.wikipedia.org/wiki/L_(complexity))), which amounts in reality to `O(lg N)` additional memory. Keep this in mind whenever you see `O(1)` memory. By `O(N)` time, I implicitly assume `O(1)` time to compare two elements. If that's not the case, the final complexity becomes `O(N)` times the complexity of a comparison.*
+*Note: by "in-place" and "`O(1)` extra space", I really mean "a constant number of pointers into the array" ([LSPACE](https://en.wikipedia.org/wiki/L_(complexity))), which amounts in reality to `O(lg N)` additional memory. Keep this in mind whenever you see `O(1)` memory. By `O(N)` time, I implicitly assume `O(1)` time to compare two elements. If that's not the case, the final complexity would be `O(N)` times the complexity of a comparison.*
 
 ## Naive Approaches
 
@@ -112,7 +112,7 @@ Here will be the high-level steps:
 
 1. Move the `Z` biggest elements to the end, which we'll call `buffer`.
    ​	`buffer` doesn't have to stay sorted, we'll fix it later.
-   ​	Divide `xs` and `ys` into blocks of `Z` elements (assume we can, we'll fix in detailed algorithm)
+   ​	Divide `xs` and `ys` into blocks of `Z` elements (assume we can, we'll make it happen in the detailed algorithm)
 2. Sort the blocks according to their first elements.
 3. For each block, grab the `Z` smallest unsorted elements (using `buffer` as buffer to do so).
 4. Sort `buffer`.
@@ -142,7 +142,7 @@ If we're careful in our implementation of each step to use a constant amount of 
 
 ## Detailed Algorithm
 
-The code is heavily commented if you want to take a closer look at how this can be implemented.
+The code is heavily commented if you want to take a closer look at how this can be implemented, but here's a fairly detailed view of how this works.
 
 ### 0.5) Setup
 
@@ -161,9 +161,9 @@ xs_start, xs_length = 0, ys_start
 ys_length = N - xs_length
 ```
 
-### 1) Move `Z` biggest elements to `buffer`
+### 1) Move biggest elements to `buffer`
 
-To move the `Z` biggest elements to the end of the array, we do so in 2 steps:
+To move the `Z` biggest elements to the end of the array, we can do so in 2 steps:
 
 1. Spot which elements of `xs` and `ys` are part of the `Z` biggest (`xs_to_move` and `ys_to_move`);
 2. Move that many last elements of `xs` and `ys` to the end of the array (to the `buffer`). We do so like such: rotate to move the smaller `ys` to be alongside the smaller `xs` (bringing the biggest numbers to the back).
@@ -171,13 +171,13 @@ To move the `Z` biggest elements to the end of the array, we do so in 2 steps:
 With a diagram:
 
 ```
-|----------------xs---------------|------------------ys-------------------|
-#1: Z biggest elements:  ^^^^^^^^^                               ^^^^^^^^^
+|----------------xs-------------------|------------------ys-------------------|
+#1: Z biggest elements:  ^^^^^^^^^^^^^                               ^^^^^^^^^
 
-|----------------xs------|-xs_big-|------------------ys----------|-ys_big-|
-#2: rotate                <=======rotate-------------------------|
-|----------------xs------|------------------ys----------|-xs_big-|-ys_big-|
-                                                        |------buffer-----|
+|----------------xs------|---xs_big---|--------------ys--------------|-ys_big-|
+#2: rotate                <=======rotate-----------------------------|
+|----------------xs------|---------------ys-------------|---xs_big---|-ys_big-|
+                                                        |--------buffer-------|
 ```
 
  To do so, we'll need a few tools.
@@ -202,9 +202,9 @@ def point_to_kth_biggest(A, xs_start, xs_length, ys_start, ys_length, k):
       x_ptr -= 1  # move x
     elif A[y_ptr-1] > A[x_ptr-1]:  # 'ys' has next largest element
       y_ptr -= 1  # move y
-    else:
+    else: # 'xs' does
       x_ptr -= 1  # move x
-  return (x_ptr, y_ptr)
+  return x_ptr, y_ptr
 ```
 
 We'll also need a rotate function, which we can cleverly implement linearly in-place with `invert` (learned about this through some stackoverflow answer that I can't find anymore):
@@ -228,7 +228,8 @@ To see why rotate left works when implemented like that, it helps to follow a la
 Initially we have:
     x_0  x_1  ...  x_{k-2}  x_{k-1}  x_k  x_{k+1}  ...  x_{n-1}  x_n     
 Our goal is to have:                                                     
-    x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}     
+    x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}
+
 So from our initial array:                                               
     x_0  x_1  ...  x_{k-2}  x_{k-1}  x_k  x_{k+1}  ...  x_{n-1}  x_n     
 We do invert(0, k):                                                      
@@ -242,13 +243,13 @@ Finally invert(0, n):
 With a reminder of what we want to do:
 
 ```
-|----------------xs---------------|------------------ys-------------------|
-#1:         xs_to_move:  ^^^^^^^^^                   ys_to_move: ^^^^^^^^^
+|----------------xs-------------------|------------------ys-------------------|
+#1:          xs_to_move: ^^^^^^^^^^^^^                   ys_to_move: ^^^^^^^^^
 
-|----------------xs------|-xs_big-|------------------ys----------|-ys_big-|
-#2: rotate                <=======rotate-------------------------|
-|----------------xs------|------------------ys----------|-xs_big-|-ys_big-|
-                                                        |------buffer-----|
+|----------------xs------|---xs_big---|--------------ys--------------|-ys_big-|
+#2: rotate                <=======rotate-----------------------------|
+|----------------xs------|---------------ys-------------|---xs_big---|-ys_big-|
+                                                        |--------buffer-------|
 ```
 
 We can make a generic function that moves the last `xs_to_move` elements from `xs` and last  `ys_to_move` elements from `ys` to the end of our array (in `buffer`):
@@ -281,10 +282,11 @@ def move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
           new_buffer_start, new_buffer_length)  # dimensions of sections change
 ```
 
-We can now get back to moving the `Z` biggest elements:
+We can now get back to how we could move the `Z` biggest elements:
 
 ```python
-# 1) Move the Z biggest elements to the end (our buffer).
+# (NOT FINAL)
+# Move the Z biggest elements to the end (our buffer).
 xs_big_start, ys_big_start = point_to_kth_biggest(A, xs_start, xs_length,
                                                   ys_start, ys_length, k=Z)
 # How many elements from xs and ys do we have to move?
@@ -298,9 +300,23 @@ xs_start, xs_length, ys_start, ys_length, buffer_start, buffer_length =
 
 In actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure.
 
-`buffer` now has `Z` elements.
+If we did it this way, `buffer` would now have `Z` elements. However, in order to make our next step work (making `xs` and `ys` multiples of `Z`), we'll move more than `Z` elements in the end, and we'll explain why.
 
 ### 1.5) Make `xs` and `ys` multiples of `Z`
+
+So, suppose we moved `Z` elements and we wanted to make `xs` and `ys` multiples of `Z` (to make the rest of the algorithm simpler). My initial thought was to just move the `(mod Z)` leftover from each subarray to the end, but imagine this array:
+
+```
+2 3 4 5 6 7 8 9   1       move Z=sqrt(9)=3 biggest elements to the end, we get:
+^xs               ^ys
+2 3 4 5 6   1    7 8 9    if we move (mod 3) elements from each to the end:
+^xs         ^ys  ^buf
+2 3 4   5 6 1 7 8 9
+^xs     ^buf!
+            !!! 'buffer' has '1', smaller than elements in 'xs'! 
+```
+
+ We can't guarantee that `buffer` has the `Z` biggest elements anymore, that's a problem. So that's not going to work.
 
 Now, to make the rest of the algorithm simpler, we'll guarantee that `xs` and `ys` are exact multiples of `Z` by moving their `mod Z` "overflow" at the end:
 
