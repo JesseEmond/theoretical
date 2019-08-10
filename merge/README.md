@@ -212,6 +212,7 @@ We'll also need a rotate function, which we can cleverly implement linearly in-p
 ```python
 def rotate_k_left(A, start, length, k):
   """Rotate elements within an array k elements to the left, using inversions."""
+  k %= length
   invert(A, start, k)
   invert(A, start+k, length-k)
   invert(A, start, length)
@@ -240,7 +241,15 @@ Finally invert(0, n):
     x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}
 ```
 
-With a reminder of what we want to do:
+Might as well get `rotate_k_right` in while we're at it:
+
+```python
+def rotate_k_right(A, start, length, k):
+  """Same as rotate_k_left, but to the right."""
+  rotate_k_left(A, start, length, -k)
+```
+
+With a reminder of what we wanted to do:
 
 ```
 |----------------xs-------------------|------------------ys-------------------|
@@ -257,7 +266,8 @@ We can make a generic function that moves the last `xs_to_move` elements from `x
 ```python
 def move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
                               buffer_length, xs_to_move, ys_to_move):
-  """Moves the end of both sorted subarrays to the end of A.
+  """Moves the specified ends of both sorted subarrays to the end of A.
+  
   Takes the last 'xs_to_move' elements from 'xs' and the last 'ys_to_move'
   elements from 'ys' and moves them all after 'ys' (in 'buffer').
   
@@ -276,8 +286,8 @@ def move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
   # to get:                                                                    
   # |-----xs-----|-----ys-----|--big-xs--:--big-ys--|                          
   #                            ^^^^^^^ buffer ^^^^^^ 
-  array_utils.rotate_k_left(A, start=new_ys_start, length=xs_to_move + new_ys_length,
-                            k=xs_to_move)
+  rotate_k_left(A, start=new_ys_start, length=xs_to_move + new_ys_length,
+                k=xs_to_move)
   return (new_xs_start, new_xs_length, new_ys_start, new_ys_length,
           new_buffer_start, new_buffer_length)  # dimensions of sections change
 ```
@@ -285,9 +295,11 @@ def move_last_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
 We can now get back to how we could move the `Z` biggest elements:
 
 ```python
-def move_k_biggest_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
-                                   k):
-  """TODO"""
+def move_k_biggest_elements_to_end(A, xs_start, xs_length, ys_start, ys_length, k):
+  """Finds the 'k' biggest elements of A within 'xs' and 'ys' and move them to the end. 
+  
+  Assumes 'xs' and 'ys' are sorted, xs_start+xs_length=ys_start, k<=|xs|+|ys|.
+  """
   xs_big_start, ys_big_start = point_to_kth_biggest(A, xs_start, xs_length,
                                                     ys_start, ys_length, k)
   
@@ -300,20 +312,13 @@ def move_k_biggest_elements_to_end(A, xs_start, xs_length, ys_start, ys_length,
         xs_to_move=xs_top_elements, ys_to_move=ys_top_elements)
   return (new_xs_start, new_xs_length, new_ys_start, new_ys_length,
           new_buffer_start, new_buffer_length)
-
-
-# (NOT FINAL)
-(xs_start, xs_length, ys_start, ys_length,
- buffer_start, buffer_length) = move_k_biggest_elements_to_end(A, xs_start, xs_length,
-                                                               ys_start, ys_length,
-                                                               k=Z)
 ```
 
 In actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure (you can see why!)
 
-If we did it this way, `buffer` would now have `Z` elements. However, in order to make our next step work (making `xs` and `ys` multiples of `Z`), we'll move more than `Z` elements in the end, and we'll explain why.
+If we called this with `k=Z`, `buffer` would now have `Z` elements. However, in order to make our next step work (making `xs` and `ys` multiples of `Z`), we'll end up moving more than `Z` elements, and we'll explain why.
 
-### 1.5) Make `xs` and `ys` multiples of `Z`
+### 1.5) Make `|xs|` and `|ys|` multiples of `Z`
 
 So, suppose we moved `Z` elements to the end and we wanted to make `xs` and `ys` multiples of `Z` (to make the rest of the algorithm simpler by knowing all blocks have `Z` elements). My initial thought was to just move the `(mod Z)` leftover from each subarray to the end, but imagine this case:
 
@@ -329,29 +334,19 @@ So, suppose we moved `Z` elements to the end and we wanted to make `xs` and `ys`
 
  We can't guarantee that `buffer` has the `Z` biggest elements anymore, that's a problem. So that's not going to work.
 
-The problem ultimately comes from that fact that we're trying to "push" the leftover `xs` and `ys` elements to `buffer` (elements that may not "fit" in `buffer`, because they're not the largest elements of `A`). Instead, we should use `buffer` as the set of largest elements of `A` that we can take from, to pad `xs` and `ys` to be multiples of `Z`. Let's change our previous step to move `3Z-2` elements to the end instead (we want at least a `buffer` of `Z` plus max `Z-1` elements to pad `xs`, and `Z-1` elements to pad `ys` (`Z + (Z-1) + (Z-1) = 3Z-2`)):
+The problem ultimately comes from the fact that we're trying to "push" the leftover `xs` and `ys` elements to `buffer` (elements that may not belong in `buffer`, because they're not the largest elements of `A`). Instead, we should use `buffer` as the set of largest elements of `A` that we can safely take from, to pad `xs` and `ys` to be multiples of `Z`. Let's change our previous step to move `3Z-2` elements to the end  (we want at least a `buffer` of `Z` plus max `Z-1` elements to pad `xs`, and `Z-1` elements to pad `ys` (`Z + (Z-1) + (Z-1) = 3Z-2`)):
 
 ```python
-# Move Z + 2(Z-1) biggest elements to the end (our buffer + elements to pad xs & ys).
+# 1) Move Z+2(Z-1) biggest elements to the end (our buffer + elements to pad xs & ys).
 (xs_start, xs_length, ys_start, ys_length,
  buffer_start, buffer_length) = move_k_biggest_elements_to_end(A, xs_start, xs_length,
                                                                ys_start, ys_length,
                                                                k=3*Z-2)
 ```
 
-TODO grab elements for xs and ys via rotate, whatever we grab will be > (good), but need to make sure it's sorted.
+Next, to grab elements for `xs` and `ys` (to pad them to `0 (mod Z)` elements) while conserving the invariant that `buffer` has the biggest elements of `A`, we'll sort `buffer` (because our rotates to move `3Z-2` elements to `buffer` didn't sort them). We can do that in `O(Z^2)` by doing a selection sort (`O((3Z-2)^2) = O(Z^2)`. Then, as long as we grab the first elements of the sorted `buffer`, we conserve our invariant while successfully padding `xs` and `ys`.
 
-
-
-TODO note about placing elements in order same problem as merge inplace
-
-Now, `buffer` has `< 3Z` elements (`Z + (-|X|) % Z + (-|Y|) % Z < 3Z`, which still keeps our buffer-sorting steps `O(Z)`).
-
-### 2) Sort blocks based on first element
-
-To sort our blocks, we use selection sort. It has the nice property that it will do `O(n)` swaps (and each block swap is `O(Z)` (swapping the whole block), for a total of `O(Z^2) = O(N)`). Since there are `O(Z)` blocks in `A` (`N = sqrt(N)^2 = Z^2` and we divided `N` elements into blocks of `Z` elements, then moved some of those elements to `buffer`, so we still have `O(Z)` remaining blocks), selection sort will do `O(Z^2) = O(N)` comparisons. The swap and comparison costs conserve our `O(N)` time complexity requirement.
-
-We implement selection sort as a general function so that we can reuse it both to sort blocks and to sort `buffer` at the end:
+Let's first implement a general selection sort, which we'll later use to sort blocks of elements:
 
 ```python
 def selection_sort(length, compare_fn, swap_fn):
@@ -364,15 +359,47 @@ def selection_sort(length, compare_fn, swap_fn):
       swap_fn(i, min_index)
 ```
 
-For example, here is how we would swap a normal list of numbers:
+Which we can use to implement a traditional sort for our buffer:
 
 ```python
-A = [3, 2, 1, 0]
-compare_fn = lambda i, j: A[i] < A[j]
-def swap_fn(i, j): A[i], A[j] = A[j], A[i]
-selection_sort(len(A), compare_fn, swap_fn)
-assert A == [0, 1, 2, 3]
+def sort_buffer(A, start, length):
+  compare_buffer_elem = lambda i, j: A[start+i] < A[start+j]
+  def swap_buffer_elem(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
+  selection_sort(length=length, compare_fn=compare_buffer_elem,
+                 swap_fn=swap_buffer_elem)
 ```
+
+So now we have all the pieces:
+
+```python
+# 1.5) Make |xs| and |ys| multiples of Z. 
+# Sort the buffer so that we can use its smaller elements to pad xs and ys.
+sort_buffer(A, buffer_start, buffer_length)
+# How many more elements do we need to reach 0 (mod Z)?
+xs_needs = (-xs_length) % Z
+ys_needs = (-ys_length) % Z
+# Grab them from the smaller elements of buffer, via rotations.
+#                           |-----------------buffer---------------------|
+# |-----xs-----|-----ys-----|--ys_needs--|--xs_needs--|-buffer-remainder-|
+#              |---------------------rotate==========>|
+# To get:
+# |-----xs-----|--xs_needs--|-----ys-----|--ys_needs--|-buffer-remainder-|
+rotate_k_right(A, start=ys_start, length=ys_length + xs_needs + ys_needs,
+               k=xs_needs)
+xs_length += xs_needs
+ys_start += xs_needs
+ys_length += ys_needs
+buffer_start += xs_needs + ys_needs
+buffer_length -= xs_needs + ys_needs
+```
+
+Now, `buffer` has `< 3Z` elements (`Z + (-|X|) % Z + (-|Y|) % Z < 3Z`, which still keeps our final buffer-sorting steps `O(Z)`). Buffer still has the biggest elements of `A`. `xs` and `ys` now have `0 (mod Z)` elements, so we can work with blocks of `Z` elements from now on.
+
+*Note: at first I tried to move the `k` biggest elements to `buffer` in a way that would already have them sorted, but then I realized that this is similar in many ways to the merge problem that we're trying to solve in the first place...*
+
+### 2) Sort blocks based on first element
+
+From here, we're going to start mixing blocks from `xs` and `ys` together by sorting the blocks by their first element. To sort our blocks, we use selection sort. It has the nice property that it will do `<= |blocks|` swaps. Each block swap is `O(Z)` (swapping `Z` elements), for a total computation cost of `O(Z^2) = O(N)` for swapping `< Z` blocks (`sqrt(N)` blocks of `sqrt(N)` elements, minus the ones in `buffer`). Selection sort on blocks will do `O(Z^2) = O(N)` comparisons (`O(|blocks|^2)`). The swap and comparison costs conserve our `O(N)` time complexity requirement.
 
 Let's define another helper function:
 
@@ -415,7 +442,7 @@ We'll go over an example in the next section to make this clearer.
 
 This is where the algorithm gets really elegant in my opinion.
 
-We ultimately want to go through `A`, one block at a time, doing a merge (**not** in-place!) between the current block and the next. How can we afford to do it with extra memory? By using our buffer that we created in step 1! There's something that feels very elegant about implementing an in-place algorithm by using the additional-memory version of itself, with a temporary working area of the input data.
+We ultimately want to go through `A`, one block at a time, doing a merge (**not** in-place!) between the current block and the next. How can we afford to do it with extra memory? By using our buffer that we created in step 1! There's something that feels very elegant about implementing an in-place algorithm by using the additional-memory version of itself, using a temporary working area of the input data.
 
 Let's focus on the implementation first, then go into more detail about why that properly sorts the array `A`.
 
@@ -423,8 +450,7 @@ Let's start with the implementation of merging with a buffer (notice the similar
 
 ``` python
 def merge_into_target(A, xs_start, ys_start, target, length):
-  """Merges the sorted xs and ys (both of same length), swapping
-  with the elements at 'target'.
+  """Merges the sorted xs and ys (same length), swapping with elements at 'target'.
   
   Note that this works even if ys_start (or xs_start) equals target+length, e.g.:
   |-----------|-----------|----------- ... -----------|-----------|
@@ -433,7 +459,7 @@ def merge_into_target(A, xs_start, ys_start, target, length):
   Whenever 'target' reaches ys_start during the merge, the current y pointer is, in
   the worst case, still at ys_start (if all xs are smaller than all ys). From there,
   we can't overwrite values from ys, because we'd essentially swap y elements with
-  themselves (current target is always <= current y pointer).
+  themselves (so, in other words, current target is always <= current y pointer).
   
   Assumptions:
   - 'target' has enough space to hold 2*length elements;
@@ -460,7 +486,7 @@ So, say that we are looking at a certain block `a` and the next one `b`:
 |======== sorted =======|  ^     ^
 ```
 
-Remember: `a` is sorted, `b` is sorted, both of length `Z` (`sqrt(N)`). We want to merge them. We can use our `buffer` as needed (which has a size within `[Z, 3Z)` (at least 1 block, plus `|xs|%Z` and `|ys|%Z`). We don't know that it has at least `2Z` elements (as required by `merge_into_target`), so we'll instead swap `a` (first block) with the start of `buffer`. Then we can use the start of our original `a` as a target directly (that's where we want our merged blocks anyway!) Using our property that it's fine to have our second block be at `target + Z`, we're ready to go:
+Remember: `a` is sorted, `b` is sorted, both of length `Z` (`sqrt(N)`). We want to merge them. We can use our `buffer` as needed (which has a size within `[Z, 3Z)` (at least 1 block, plus `(-|xs|)%Z` and `(-|ys|)%Z`). We don't know that it has at least `2Z` elements (as required by `merge_into_target`), so we'll instead swap `a` (first block) with the start of `buffer`. Then we can use the start of our original `a` as a target directly (that's where we want our merged blocks anyway!) Using our property that it's fine to have our second block be at `target + Z`, we're ready to go:
 
 ```python
 # 3) Grab Z smallest unsorted elements for each block.
@@ -473,11 +499,17 @@ for i in range(0, buffer_start - Z, Z):
                     target=current_block, length=Z)
 ```
 
-TODO why that works
+TODO: why this works (whatever bigger elems "become" xs/ys)
 
 ### 4) Sort `buffer`
 
-TODO
+This part's easy, we've done it before:
+
+```python
+sort_buffer(A, buffer_start, buffer_length)
+```
+
+And we're done!
 
 ## Full Example
 
@@ -486,3 +518,7 @@ TODO
 ## Merge Sort
 
 TODO
+
+## Peeking
+
+TODO check real algo?

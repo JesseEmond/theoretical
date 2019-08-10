@@ -267,12 +267,13 @@ def _make_multiples_of_k(A, pointers, k):
     # Rotate the (sorted) smallest elements of 'buffer' to extend xs and ys as
     # needed. This way, we know that 'buffer-remainder' still has the biggest
     # elements, and xs and ys get elements that preserve their sorted order.
+    #                           |-----------------buffer---------------------|
     # |-----xs-----|-----ys-----|--ys_needs--|--xs_needs--|-buffer-remainder-|
     #              |---------------------rotate==========>|
     # to get:
     # |-----xs-----|--xs_needs--|-----ys-----|--ys_needs--|-buffer-remainder-|
     #                                                      ^^^^^ buffer ^^^^^
-    array_utils.rotate_k_right(A, start=pointers.xs_start + pointers.xs_length,
+    array_utils.rotate_k_right(A, start=pointers.ys_start,
                                length=pointers.ys_length + xs_needs + ys_needs,
                                k=xs_needs)
     pointers.xs_length += xs_needs
@@ -282,7 +283,7 @@ def _make_multiples_of_k(A, pointers, k):
     pointers.buffer_length -= xs_needs + ys_needs
 
 def _sort_buffer(A, pointers):
-    """Sorts a the buffer subarray in-place in O(buffer_length^2)."""
+    """Sorts the buffer subarray (at the end) in-place in O(buffer_length^2)."""
     start = pointers.buffer_start
     compare_buffer_elem = lambda i, j: A[start+i] < A[start+j]
     def swap_buffer_elem(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
