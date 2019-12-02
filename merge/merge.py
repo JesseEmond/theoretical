@@ -1,5 +1,4 @@
-"""Merge function and related helpers to sort an array that has two sorted
-subarrays in-place.
+"""Merge function and related helpers to sort two sorted subarrays in-place.
 
 General notation:
     A: array to merge
@@ -18,11 +17,11 @@ import math
 
 
 class SubarrayPointers:
-    """Indices to both sorted subarrays within A, in order, 'xs', 'ys' and
-    'buffer' (unsorted)."""
+    """Subarray indices within A: xs, ys (sorted) and buffer (unsorted)."""
     def __init__(self, xs_start, xs_length, ys_start, ys_length,
                  buffer_start, buffer_length):
         assert xs_length >= 0 and ys_length >= 0 and buffer_length >= 0
+        assert ys_start >= xs_start and buffer_start >= ys_start
         self.xs_start = xs_start
         self.xs_length = xs_length
         self.ys_start = ys_start
@@ -50,11 +49,10 @@ class SubarrayPointers:
 
 
 def merge_inplace(A, start, length, verbose=False):
-    """Takes a subarray within A that is assumed to have two subarrays that are
-    sorted, and sorts it in-place.
+    """Sorts, in-place, a subarray within A that contains 2 sorted subarrays.
 
     Complexity:
-        - O(len(A)) time
+        - O(length) time
         - O(1) space
     """
     # TODO(emond): test relative
@@ -62,7 +60,8 @@ def merge_inplace(A, start, length, verbose=False):
     Z = int(math.sqrt(N))
     ys_start = array_utils.find_first_unsorted_index(A, start, N)
     if ys_start == N: return  # already sorted!
-    pointers = SubarrayPointers(xs_start=start,xs_length=ys_start - start,
+    pointers = SubarrayPointers(xs_start=start,
+                                xs_length=ys_start - start,
                                 ys_start=ys_start,
                                 ys_length=start + N - ys_start,
                                 buffer_start=start + N,
@@ -109,7 +108,6 @@ def merge_inplace(A, start, length, verbose=False):
     if verbose: print("3) sort blocks one at a time : %s" % pointers.show(A))
 
     # 4) Sort our buffer of "large" elements.
-    # TODO(emond): README
     _sort_buffer(A, pointers)
     if verbose: print("4) sort buffer: %s" % pointers.show(A))
     assert array_utils.is_sorted(A, start, length)
@@ -129,13 +127,14 @@ def merge_sort_inplace(A):
 
 
 def _merge_into_target(A, xs_start, ys_start, target, length):
-    """Merges the sorted xs and ys (both of same length), swapping
-    with the elements at 'target'.
+    """Merges sorted xs&ys (both same length), swapping with 'target' elements.
 
     Note that this works even if ys_start (or xs_start) equals target+length,
     e.g.:
     |-----------|-----------|----------- ... -----------|-----------|
      ^ target    ^ ys_start                              ^ xs_start
+    <=======================>
+           2 * length
 
     Whenever 'target' reaches ys_start during the merge, the current y pointer
     is, in the worst case, still at ys_start (if all xs are smaller than
@@ -144,13 +143,19 @@ def _merge_into_target(A, xs_start, ys_start, target, length):
     <= current y pointer).
 
     Assumptions:
-    - 'target' has enough space to hold 2*length elements;
-    - [target, target+length) does not overlap with xs or ys.
+        - 'target' has enough space to hold 2*length elements;
+        - [target, target+length) does not overlap with xs or ys.
+
+    Complexity:
+        - O(length) time
+        - O(1) space (using 'target' as temporary space)
     """
     x, y = xs_start, ys_start
     for i in range(length * 2):
         xs_exhausted = x >= xs_start + length
         ys_exhausted = y >= ys_start + length
+        # Either we're forced to read x or y (all that's left), or pick the
+        # smallest.
         if ys_exhausted or (not xs_exhausted and A[x] < A[y]):
             A[x], A[target+i] = A[target+i], A[x]
             x += 1
@@ -160,7 +165,9 @@ def _merge_into_target(A, xs_start, ys_start, target, length):
 
 
 def _point_to_kth_biggest(A, pointers, k):
-    """Point to the end of 'xs' and 'ys' and move, in descending order through
+    """Move k times total, in descending order, pointers from the end of xs/ys.
+
+    Point to the end of 'xs' and 'ys' and move, in descending order through
     the array, both pointers until we've moved k times.
     If none of the k biggest elements is in a particular subarray ('xs' or
     'ys'), its pointer will be on start+length of that subarray (right after).
@@ -170,7 +177,8 @@ def _point_to_kth_biggest(A, pointers, k):
         - (xs_pointer, ys_pointer)
           Tuple of pointers within 'xs' and 'ys', respectively, where one is a
           pointer to the kth biggest element and the other is a pointer to the 
-          last of the k-1 biggest elements encountered in that subarray.
+          last of the k-1 biggest elements encountered (if any) in that
+          subarray.
 
     Complexity:
         - O(|ys| + |xs|) time
@@ -191,7 +199,8 @@ def _point_to_kth_biggest(A, pointers, k):
 
 
 def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
-    """Moves the ends of both sorted subarrays to the end of A.
+    """Moves the ends of both sorted subarrays to the end of A (buffer).
+
     Takes the last 'xs_to_move' elements from 'xs' and the last 'ys_to_move'
     elements from 'ys' and moves them all after 'ys'. Updates the pointers.
 
@@ -219,7 +228,9 @@ def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
 
 
 def _move_k_biggest_elements_to_end(A, pointers, k):
-    """Moves the k biggest elements from A (at the end of 'xs' and 'ys') after
+    """Moves k largest elements of A to 'buffer' section (unsorted).
+
+    Moves the k largest elements from A (at the end of 'xs' and 'ys') after
     'ys', to make up a new 'buffer' section (unsorted). Updates the pointers.
 
     Guarantees after calling:
