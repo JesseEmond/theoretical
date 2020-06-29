@@ -41,8 +41,8 @@ use that algorithm.
 
 This made me wonder:
 
- 1. **Why does this algorithm work?**
- 2. **Why must suffix be odd?**
+ 1. **Why must suffix be odd?**
+ 2. **Does this algorithm work for all odd suffixes?**
 
 ## Problem Statement
 We are ultimately interested in finding `x` such that `x^3` ends in a given
@@ -184,8 +184,8 @@ forged signature that ends in `02` (without wrapping around RSA's `N`, that is).
 This is unfortunate, but in most realistic scenarios it is possible to slightly
 alter `msg` until it gives us a hash suffix for which we can forge a signature.
 This is why Filippo's much simpler algorithm is likely all we need, because in
-practical scenarios we probably have a way to alter `msg` to change the hash,
-with a `1/2` probability of getting a odd hash per attempt.
+practical scenarios we probably have a way to alter `msg` within our attack
+context to change the hash, until we get a odd hash.
 
 ## Resources
 Useful links to get a better understanding of Hensel's Lemma:
