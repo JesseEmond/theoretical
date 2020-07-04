@@ -1,15 +1,15 @@
 # Perfect Cube Suffix
 
-Algorithm to find an `x` such that `x^3` has the given suffix, in hex. In other
+Algorithm to find an `x` such that `x^3` has the given suffix, in bits. In other
 words, finding a perfect cube with a given bits suffix.
 
 ## Context
 While working on a
 [Cryptopals challenge](https://cryptopals.com/sets/6/challenges/42)
-, I was learning about how to forge `e=3` RSA signatures that fool
+, I was learning about forging `e=3` RSA signatures that fool
 implementations that check the decrypted padding in a fuzzy way (bypassing the
-need to solve `sig^3 (mod N)` without knowing the private `d` exponent, by
-giving a `sig` that gives a final `sig^3` result that has the bits we want +
+need to solve `sig^3 (mod N)` without knowing the private `d` RSA exponent, by
+instead giving a `sig` that gives a final `sig^3` result that has the bits we want +
 some garbage for bits that are not checked by vulnerable implementations).
 
 The attack in this Cryptopals challenge is the
@@ -41,8 +41,9 @@ use that algorithm.
 
 This made me wonder:
 
- 1. **Why must suffix be odd?**
+ 1. **Why must suffix be odd for this algorithm to work?**
  2. **Does this algorithm work for all odd suffixes?**
+ 3. **What can we do about even suffixes?**
 
 ## Problem Statement
 We are ultimately interested in finding `x` such that `x^3` ends in a given
@@ -95,7 +96,7 @@ can see how it is essentially an iterative application of Hensel's Lemma with
 For odd suffixes, we have `suffix = 1 (mod 2)`. `suffix = x^3 = 1 (mod 2)` gives
 us that `x = 1 (mod 2)` (in other words `x` must be odd).
 
-We can show that `f'(x) != 0 (mod 2)` for odd `x`:
+We can show that `f'(x) != 0 (mod 2)` for odd `x` (all in `mod 2`):
 ```
 f'(x) = 3x^2
 => 3x^2 = 3(1 (mod 2))^2 = 1 != 0 (mod 2)
