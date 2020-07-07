@@ -32,7 +32,7 @@ For even 'suffix':
     So for some even suffixes, we'll find multiple solutions, while for others
     we'll find none. E.g.:
      - suffix=0x12 has no x such that x^3 gives a hex suffix of 0x12.
-     - suffix=0x8 has multiple such xs: 
+     - suffix=0x18 has multiple such xs: 
        0x36**3 = 0x26718
        0xb6**3 = 0x5bfd18
        0x76**3 = 0x191218
