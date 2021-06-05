@@ -116,12 +116,12 @@ def merge_inplace(A, start, length, verbose=False):
 def merge_sort_inplace(A):
     """TODO(emond): doc"""
     # TODO(emond): more tests
-    size = 2  # powers of 2
-    while size < len(A):  # lg(len(A)) iterations
-        for i in range(size, len(A), size):  # goes over all elements of A
-            previous = i - size
-            length = min(size*2, len(A)-previous)
-            merge_inplace(A, start=previous, length=length)
+    size = 1  # powers of 2
+    while size < len(A):  # lg N iterations
+        for xs_start in range(0, len(A), size * 2):  # goes over N elements
+            ys_start = xs_start + size
+            length = min(len(A), ys_start + size) - xs_start
+            merge_inplace(A, start=xs_start, length=length)
         size *= 2
     assert array_utils.is_sorted(A, 0, len(A))
 

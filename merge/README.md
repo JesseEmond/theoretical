@@ -731,6 +731,10 @@ And note that for our last block (`[15,20)`) we don't have to do anything, since
 We just do a selection sort, like we've done before:
 
 ```
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24, 22, 21, 23, 25, 26
+<############################## done ###############################> |---------buffer---------|
+...
+
 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
 ```
 
@@ -738,7 +742,29 @@ And we are done!
 
 ## Merge Sort
 
-TODO
+What's neat is that we now have a very nice primitive to implement a simple bottom-up merge sort in-place that's `O(n lg n)` if we want to:
+
+- We start with subarrays of size `1`, merge each pair of subarrays, using our algorithm (this one is a bit trivial, only involves swaps);
+- Double subarrays size (`2` now), merge each pair of subarrays;
+- Double subarrays size (`4` now), merge;
+- Continue until the subarrays size is as big as `A`.
+
+We end up doing `lg N` iterations, where each of them goes over `N` elements.
+
+```python
+# Assuming our previous code is available under `merge_inplace(array, start_idx, length)`.
+
+def merge_sort_inplace(A):
+    size = 1  # powers of 2
+    while size < len(A):  # lg N iterations
+        for xs_start in range(0, len(A), size * 2):  # goes over N elements
+            ys_start = xs_start + size
+            length = min(len(A), ys_start + size) - xs_start
+            merge_inplace(A, start_idx=xs_start, length=length)
+        size *= 2
+```
+
+This is perhaps a bit too involved for just doing a sort in reality! Maybe there would be a better way to take advantage of the fact that most subarrays (except the last ones) will have the same size when merging, too. But our more general merge is still usable here and this is a nice showcase of it!
 
 ## Peeking
 
