@@ -566,11 +566,11 @@ And we're done!
 
 ## Full Example
 
-This is a lot to take in, let's look at an example to get a feel for the structure and operations. Note that all of this processing will feel superfluous and costly, but keep in mind that an in-place algorithm like this would 
+This is a lot to take in, let's look at an example to get a feel for the structure and operations. Note that all of this processing will feel superfluous and costly for such a small array, but keep in mind that an in-place linear algorithm like this could be used even if the array was `1 PiB` big, while still being linear in time and constant in extra space.
 
 
 
-We will be merging an example array that I generated randomly by shuffling 27 ints, splitting them, and ordering each subarray:
+We will be merging an example array that I generated randomly by shuffling 27 ints, splitting them, then sorting each subarray:
 
 ```
 1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 21, 22, 23, 25, 0, 8, 10, 18, 19, 20, 24, 26
@@ -633,7 +633,7 @@ Sort `buffer`, with selection sort:
 
 Pad `xs ` and `ys` to become multiples of `Z=5`:
 
-- `xs_needs = 4`, `ys_needs = 2`
+- Need to pad with`xs_needs = 4`, `ys_needs = 2` elements to become multiples of `5`.
 
 ```
 1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 0, 8, 10, 14, 15,   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
@@ -645,7 +645,96 @@ Pad `xs ` and `ys` to become multiples of `Z=5`:
 
 ### 2) Sort blocks based on first element
 
-TODO continue here
+Now we can conceptually break up `xs` and `ys` into blocks of `5` elements:
+
+```
+1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 16, 17, 18, 19, 0, 8, 10, 14, 15, 20, 21, 22, 23, 24, 25, 26
+|-------------:---------xs-----:-------------------|-------ys--------|----------buffer---------|
+```
+
+Sort each of the blocks based on their first elements (highlighted), using selection sort:
+
+```
+1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 16, 17, 18, 19, 0, 8, 10, 14, 15, 20, 21, 22, 23, 24, 25, 26
+^              ^                ^                   ^                | ... buffer
+*                                                   * (swap)
+0, 8, 10, 14, 15, 6, 7, 9, 11, 12, 13, 16, 17, 18, 19, 1, 2, 3, 4, 5, 20, 21, 22, 23, 24, 25, 26
+^                 ^                ^                   ^             | ... buffer
+                  *                                    * (swap)
+0, 8, 10, 14, 15, 1, 2, 3, 4, 5, 13, 16, 17, 18, 19, 6, 7, 9, 11, 12, 20, 21, 22, 23, 24, 25, 26
+^                 ^              ^                   ^               | ... buffer
+                                 *                   * (swap)
+0, 8, 10, 14, 15, 1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
+^                 ^              ^                ^                  | ... buffer
+```
+
+### 3) Grab `Z` smallest unordered elements for each block
+
+For each blocks (note: we have 4 blocks total here), do our sort!
+
+Block `[0,5)`:
+
+```
+0, 8, 10, 14, 15, 1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
+|-current_block-| |-next_block-|                                     |---------buffer----------|
+```
+
+The sorting process, where we do a **non-inplace** merge using `buffer` as "extra" space:
+
+```
+0, 8, 10, 14, 15  |  1, 2, 3, 4, 5  [...]  20, 21, 22, 23, 24, 25, 26
+^^^^^^^^^^^^^^^^                           ^^^^^^^^^^^^^^^^^^ (move block to buffer)
+20, 21, 22, 23, 24  |  1, 2, 3, 4, 5  [...]  0, 8, 10, 14, 15  |  25, 26
+^                      ^                     ^ (next smallest)
+0, 21, 22, 23, 24  |  1, 2, 3, 4, 5  [...]  20, 8, 10, 14, 15  |  25, 26
+   ^                  ^ (next smallest)         ^
+0, 1, 22, 23, 24  |  21, 2, 3, 4, 5  [...]  20, 8, 10, 14, 15  |  25, 26
+...
+
+0, 1, 2, 3, 4, 5, 8, 10, 14, 15, 6, 7, 9, 11, 12, 13, 16, 17, 18, 19, 20, 22, 23, 24, 21, 25, 26
+<### done ###> |---next_block--|                                      |---------buffer---------|
+```
+
+Now block `[0, 5)` is done! Notice how buffer was shuffled around a bit -- that's fine, we sort it at the end.
+
+Block `[5,10)`:
+
+```
+0, 1, 2, 3, 4, 5, 8, 10, 14, 15, 6, 7, 9, 11, 12, 13, 16, 17, 18, 19, 20, 22, 23, 24, 21, 25, 26
+<### done ###> |-current_block-| |--next_block--|                     |---------buffer---------|
+...
+
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 13, 16, 17, 18, 19, 20, 24, 22, 23, 21, 25, 26
+<########## done ###########> |---next_block----|                     |---------buffer---------|
+```
+
+Block `[10,15)`:
+
+```
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 13, 16, 17, 18, 19, 20, 24, 22, 23, 21, 25, 26
+<########## done ###########> |--current_block--| |---next_block----| |---------buffer---------|
+...
+
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24, 22, 21, 23, 25, 26
+<#################### done #####################> |---next_block----| |---------buffer---------|
+```
+
+And note that for our last block (`[15,20)`) we don't have to do anything, since our two-block sorting has already taken care of it!
+
+```
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24, 22, 21, 23, 25, 26
+<############################## done ###############################> |---------buffer---------|
+```
+
+### 4) Sort `buffer`
+
+We just do a selection sort, like we've done before:
+
+```
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
+```
+
+And we are done!
 
 ## Merge Sort
 
