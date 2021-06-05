@@ -20,6 +20,7 @@ def find_first_unsorted_index(A, start, length):
     default = start+length
     return next(unsorted_elements, default)
 
+
 def swap_k_elements(A, start, k, target):
     """Swaps elements in-place at indices [start, start+k) with the elements at
     indices [target, target+k), from left to right.
@@ -79,7 +80,7 @@ def rotate_k_left(A, start, length, k):
 
     Note:
         To do this in O(n) time O(1) mem, we apply 3 invertions:
-            # assuming we're rotating a full array of length n for simplicity...
+            # assuming we're rotating a full array of length n for simplicity
             invert(0, k)
             invert(k, n)
             invert(0, n)
@@ -96,15 +97,18 @@ def rotate_k_left(A, start, length, k):
         Finally invert(0, n):
             x_k  x_{k+1}  ...  x_{n-1}  x_n  x_0  x_1  ...  x_{k-2}  x_{k-1}
     """
-    if length == 0: return  # prevent % 0
+    if length == 0:
+        return  # prevent % 0
     k %= length  # rotate(m*length + i) == rotate(i)
     invert(A, start, k)  # O(k) = O(length)
     invert(A, start+k, length-k)  # O(length-k) = O(length)
     invert(A, start, length)  # O(length)
 
+
 def rotate_k_right(A, start, length, k):
     """Same as rotate_k_left, but to the right."""
     return rotate_k_left(A, start, length, -k)
+
 
 def invert(A, start, length):
     """Inverts the region [start, start+length) within A.
@@ -121,6 +125,7 @@ def invert(A, start, length):
     last = start+length-1
     for i in range(length//2):
         A[start+i], A[last-i] = A[last-i], A[start+i]
+
 
 def is_sorted(A, start, length):
     """Checks if the given array is sorted for the range [start, start+length).

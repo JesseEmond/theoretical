@@ -370,7 +370,7 @@ Which we can use to implement a traditional sort for our buffer:
 
 ```python
 def sort_buffer(A, start, length):
-  compare_buffer_elem = lambda i, j: A[start+i] < A[start+j]
+  def compare_buffer_elem(i, j): return A[start+i] < A[start+j]
   def swap_buffer_elem(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
   selection_sort(length=length, compare_fn=compare_buffer_elem,
                  swap_fn=swap_buffer_elem)
