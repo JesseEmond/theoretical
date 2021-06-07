@@ -83,9 +83,8 @@ def merge_inplace(A, start, length, verbose=False):
     # largest elements (buffer) + (Z-1) (max xs padding) + (Z-1) (max ys
     # padding) = 3Z-2.
     _move_k_biggest_elements_to_end(A, pointers, k=3*Z-2)
-    _sort_buffer(A, pointers)
     if verbose:
-        print(f"1.0) move 3Z-2 to end + sort: {pointers.show(A)}")
+        print(f"1.0) move 3Z-2 to end: {pointers.show(A)}")
     _make_multiples_of_k(A, pointers, k=Z)
     if verbose:
         print(f"1.1) make multiples of Z: {pointers.show(A)}")
@@ -220,7 +219,6 @@ def _move_last_elements_to_end(A, pointers, xs_to_move, ys_to_move):
     """
     assert pointers.xs_length >= xs_to_move and \
            pointers.ys_length >= ys_to_move
-    # TODO(emond): update README to have this instead
     # Rotate the last elements of 'xs' that belong in 'buffer' so that they're
     # on the right of the new 'ys', starting from:
     # |-----xs-----:--big-xs--|-----ys-----:--big-ys--|
@@ -267,25 +265,15 @@ def _move_k_biggest_elements_to_end(A, pointers, k):
 
 def _make_multiples_of_k(A, pointers, k):
     """Modifies 'xs' and 'ys' to have a multiple of 'k' elements.
-    TODO(emond): update all
 
-    Assumes that one already ran _point_to_kth_biggest before with a 'k' of at
-    least 3k-2 (k in this method's context). In the context of the merge, of
-    3Z-2. This is because this function takes from the big elements to
-    construct sorted 'xs' and 'ys' as multiple of k elements, while ensuring
-    that we still end up with at least k "big" elements. 3Z-2 comes from:
-    Z (want min Z big elements) + Z-1 (max of |xs|%Z) + Z-1 (max of |ys|%Z)
-
-    Assumptions:
-        - xs_biggest_length + ys_biggest_length >= 3*k-2
-    Guarantees:
-        - xs, ys will remain sorted, but ys might move
-        - new_xs_biggest_length + new_ys_biggest_length >= k
+    Takes from buffer to pad 'xs' and 'ys' with extra elements to each have a
+    size of '0 mod k'. Does so by first sorting 'buffer', then rotating.
     """
-    # TODO(emond): TEST
+    _sort_buffer(A, pointers)
     # How many more elements do we need to reach %k==0?
     xs_needs = (-pointers.xs_length) % k
     ys_needs = (-pointers.ys_length) % k
+    assert pointers.buffer_length >= xs_needs + ys_needs
     # Rotate the (sorted) smallest elements of 'buffer' to extend xs and ys as
     # needed. This way, we know that 'buffer-remainder' still has the biggest
     # elements, and xs and ys get elements that preserve their sorted order.

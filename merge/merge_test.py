@@ -2,7 +2,8 @@ import random
 import unittest
 from merge import (_point_to_kth_biggest, _merge_into_target,
                    _move_k_biggest_elements_to_end, _move_last_elements_to_end,
-                   merge_inplace, merge_sort_inplace, SubarrayPointers)
+                   _make_multiples_of_k, merge_inplace, merge_sort_inplace,
+                   SubarrayPointers)
 
 
 class PointToKthBiggestTests(unittest.TestCase):
@@ -262,6 +263,53 @@ class MoveKBiggestElementsToEndTests(unittest.TestCase):
                          SubarrayPointers(xs_start=2, xs_length=4,
                                           ys_start=6, ys_length=5,
                                           buffer_start=11, buffer_length=0))
+
+
+class MakeMultiplesOfKTests(unittest.TestCase):
+    def test_already_multiples(self):
+        xs = [4, 5, 6, 7, 10]
+        ys = [1, 2, 3, 8, 9]
+        A = [100] + xs + ys + [31, 32]
+        pointers = SubarrayPointers(xs_start=1, xs_length=5,
+                                    ys_start=6, ys_length=5,
+                                    buffer_start=11, buffer_length=0)
+        _make_multiples_of_k(A, pointers, k=5)
+        self.assertEqual(A, [100, 4, 5, 6, 7, 10, 1, 2, 3, 8, 9, 31, 32])
+        self.assertEqual(pointers,
+                         SubarrayPointers(xs_start=1, xs_length=5,
+                                          ys_start=6, ys_length=5,
+                                          buffer_start=11, buffer_length=0))
+
+    def test_both_need_values(self):
+        xs = [4, 5, 6]
+        ys = [1]
+        buffer = [30, 31, 32, 33, 34]
+        A = [100] + xs + ys + buffer + [40]
+        pointers = SubarrayPointers(xs_start=1, xs_length=3,
+                                    ys_start=4, ys_length=1,
+                                    buffer_start=5, buffer_length=5)
+        _make_multiples_of_k(A, pointers, k=4)
+        self.assertEqual(A, [100, 4, 5, 6, 33, 1, 30, 31, 32, 34, 40])
+        self.assertEqual(pointers,
+                         SubarrayPointers(xs_start=1, xs_length=4,
+                                          ys_start=5, ys_length=4,
+                                          buffer_start=9, buffer_length=1))
+
+    def test_sorts_buffer_first(self):
+        xs = [4, 5, 6]
+        ys = [1]
+        buffer = [32, 34, 33, 31, 30]
+        A = [100] + xs + ys + buffer + [40]
+        pointers = SubarrayPointers(xs_start=1, xs_length=3,
+                                    ys_start=4, ys_length=1,
+                                    buffer_start=5, buffer_length=5)
+        _make_multiples_of_k(A, pointers, k=4)
+        self.assertEqual(A, [100, 4, 5, 6, 33, 1, 30, 31, 32, 34, 40])
+        self.assertEqual(pointers,
+                         SubarrayPointers(xs_start=1, xs_length=4,
+                                          ys_start=5, ys_length=4,
+                                          buffer_start=9, buffer_length=1))
+
 
 
 class MergeIntoTargetTests(unittest.TestCase):
