@@ -1,4 +1,4 @@
-"""Merge function and related helpers to sort two sorted subarrays in-place.
+"""Merge function and related helpers to merge two sorted subarrays in-place.
 
 General notation:
     A: array to merge
@@ -57,7 +57,6 @@ def merge_inplace(A, start, length, verbose=False):
         - O(length) time
         - O(1) space
     """
-    # TODO(emond): test relative
     N = length
     Z = int(math.sqrt(N))
     ys_start = array_utils.find_first_unsorted_index(A, start, N)
@@ -126,6 +125,7 @@ def merge_inplace(A, start, length, verbose=False):
 
 def merge_sort_inplace(A):
     """TODO(emond): doc"""
+    # TODO(emond): match readme
     # TODO(emond): more tests
     size = 1  # powers of 2
     while size < len(A):  # lg N iterations

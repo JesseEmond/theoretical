@@ -331,6 +331,14 @@ class MergeInplaceTests(unittest.TestCase):
                 merge_inplace(A, start=0, length=len(A))
                 self.assertEqual(A, sorted(left + right))
 
+    def test_with_offset(self):
+        prefix = [3, 1, 5]
+        suffix = [6, 2, 4]
+        xs, ys = [7, 10, 12], [8, 9, 11, 13, 14]
+        A = prefix + xs + ys + suffix
+        merge_inplace(A, start=len(prefix), length=len(xs) + len(ys))
+        self.assertEqual(A, prefix + [7, 8, 9, 10, 11, 12, 13, 14] + suffix)
+
 
 class MergeSortInplaceTests(unittest.TestCase):
     def test_already_sorted(self):
