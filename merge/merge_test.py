@@ -1,3 +1,4 @@
+import random
 import unittest
 from merge import (_point_to_kth_biggest, _merge_into_target,
                    _move_k_biggest_elements_to_end, _move_last_elements_to_end,
@@ -345,6 +346,30 @@ class MergeSortInplaceTests(unittest.TestCase):
         A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         merge_sort_inplace(A)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    def test_descending(self):
+        A = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        merge_sort_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    def test_swapped(self):
+        A = [1, 0, 3, 2, 5, 4, 7, 6, 9, 8]
+        merge_sort_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    def test_shuffled(self):
+        A = [4, 0, 8, 1, 2, 5, 9, 3, 7, 6]
+        merge_sort_inplace(A)
+        self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    def test_multiple_sizes(self):
+        random.seed(42)
+        N = 150
+        for length in range(N):
+            A = list(range(length))
+            random.shuffle(A)
+            merge_sort_inplace(A)
+            self.assertEqual(A, list(range(length)))
 
 
 if __name__ == "__main__":

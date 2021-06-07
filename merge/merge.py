@@ -124,9 +124,7 @@ def merge_inplace(A, start, length, verbose=False):
 
 
 def merge_sort_inplace(A):
-    """TODO(emond): doc"""
-    # TODO(emond): match readme
-    # TODO(emond): more tests
+    """Merge sort 'A' in-place, using a bottom-up approach."""
     size = 1  # powers of 2
     while size < len(A):  # lg N iterations
         for xs_start in range(0, len(A), size * 2):  # goes over N elements
