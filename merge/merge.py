@@ -306,7 +306,7 @@ def _sort_buffer(A, pointers):
 
 
 def _sort_blocks(A, pointers, Z):
-    """TODO(emond): document"""
+    """Sorts blocks of 'xs' and 'ys' based on their first element."""
     assert (pointers.xs_length + pointers.ys_length) % Z == 0
     num_blocks = (pointers.xs_length + pointers.ys_length) // Z
     start = pointers.xs_start

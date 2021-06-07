@@ -311,7 +311,6 @@ class MakeMultiplesOfKTests(unittest.TestCase):
                                           buffer_start=9, buffer_length=1))
 
 
-
 class MergeIntoTargetTests(unittest.TestCase):
     def test_sorted(self):
         A = [99] * 8 + [1, 2, 3, 4] + [5, 6, 7, 8]
