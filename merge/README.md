@@ -26,9 +26,9 @@ _Also note that the examples & this write-up assume distinct elements, but that'
 
 To appreciate the complexity of the problem, it helps to see how and why naive approaches fail.
 
-If we didn't care about `O(N)` time, we could use an in-place sort algorithm (probably not merge-sort, which would likely use a function like the one we're trying to code here for its merge operation... :-) ) to solve it in `O(N lg N)`.
+If we didn't care about `O(N)` time, we could use an in-place sort algorithm (maybe not merge-sort, which would likely use a function like the one we're trying to code here for its merge operation... :-) ) to solve it in `O(N lg N)`.
 
-If we didn't have the `O(1)` memory requirement, we could relatively easily build a new sorted array from copying, in order, from both subarrays:
+If we didn't have the `O(1)` memory requirement, we could relatively easily build a new sorted array where we copy, in order, from both subarrays:
 
 ```python
 first_y = index_first_out_of_order(original)
@@ -47,7 +47,7 @@ for i in range(len(new)):
 
 But we're not allowed the `O(N)` extra memory.
 
-What if we blindly tried this approach, but did it all in-line with swaps instead of doing copies to separate storage (essentially replace `new[i] = original[whatever]` with `new[i], original[whatever] = original[whatever], new[i]` (swap))? We'd run into issues pretty fast, here's an example:
+What if we blindly tried this approach, but did it all in-place with swaps instead of doing copies to separate storage (essentially replace `new[i] = original[whatever]` with `new[i], original[whatever] = original[whatever], new[i]` (swap))? We'd run into issues pretty fast. Here's an example:
 
 ```
 4  5  8  9   0  1  2  3  6  7
@@ -85,7 +85,7 @@ I spent a long time exploring a bunch of ideas.
 
 I considered finding the `(n+1)`th sorted element (`(n+1)`th smallest element) in `O(N)` (by having a pointer on `xs` and one on `ys` and moving one at a time until we moved `n+1` times), which would then give us the element that belongs at the index of `y0`, call it `P` for a sort of "partition" point (at the `nth` index in the final sorted array). Then, I was hoping I could partition `xs` and `ys` to move the elements `<= P` to `xs`, and the ones `> P` to `ys`.
 
-By naively doing so, I could have two subarrays that each contained their own two sorted subarrays to merge... so no closer to solving the problem in `O(N)` than initially.
+By naively doing that, I would have two subarrays that each contained their own two sorted subarrays to merge... so no closer to solving the problem in `O(N)` than initially.
 
 I played with ideas to move the elements `<= P` to `xs` while ensuring that they are in a sorted order in `xs` (so solving the problem for the first `n` elements!) Then, if I could find a way to maintain two sorted subarrays in the elements that I move to `ys`, I could have sorted `n` elements in `O(n)` with an array of `m` elements (`N-n`) left to merge, with the same strategy that would have been `O(m)` (so `O(n+m)=O(N)`. However, finding a way to preserve the two sorted subarrays in `ys` while sorting the `xs` proved to be quite hard, or at least not in a way that would have been `O(n)`.
 
@@ -96,7 +96,7 @@ Turns out this isn't exactly a trivial problem (one that I'll see in _The Art of
 - Divide in blocks of `sqrt(N)`;
 - Use last `sqrt(N)` of biggest numbers as a buffer;
 - Sort blocks by their first number;
-- Remember that selection sort has a predictable number of moves (`N`).
+- Remember that selection sort has a predictable, linear number of moves (`N`).
 
 At this point, I stopped reading to try and use those hints to come up with the rest of the algorithm on my own (what follows). The time spent thinking about the problem thankfully proved to be useful, because it was then much more straightforward to combine those hints with the tricks I developed while working on the problem.
 
@@ -113,7 +113,7 @@ Let's define our **block size** `Z = floor(sqrt(N))`.
 Here will be the high-level steps:
 
 1. Move the `Z` biggest elements to the end, which we'll call `buffer`.
-   ​	`buffer` doesn't have to stay sorted, we'll fix it at the end.
+   ​	`buffer` doesn't have to stay sorted -- we'll fix it at the end.
    ​	Divide `xs` and `ys` into blocks of exactly `Z` elements (assume we can, we'll make it happen in the detailed algorithm)
 2. Sort the blocks according to their first elements.
 3. For each block pairs, grab the `Z` smallest unsorted elements (using `buffer` as additional storage to do so).
@@ -156,6 +156,10 @@ Find `ys_start` (first element of `ys`) by going linearly through `A` to find th
 ys_start = next(i for i in range(1, len(A)) if A[i-1] > A[i])  # O(N)
 ```
 
+*Notes: perhaps there is a smarter way to find the pivot point here in O(lg N),
+but since O(N) still satisfies our overall complexity goal we'll leave it
+as-is.*
+
 If we never find one, well the array is already sorted, we can exit already.
 
 Then delimiters of start and length of `xs` and `ys` are easy to deduce:
@@ -172,7 +176,7 @@ To move the `Z` biggest elements to the end of the array, we can do so in 2 step
 1. Spot which elements of `xs` and `ys` are part of the `Z` biggest (call them `xs_to_move` and `ys_to_move`);
 2. Move that many last elements of `xs` and `ys` to the end of the array (to what we'll then call `buffer`). We do so like such: rotate to move the smaller `ys` to be alongside the smaller `xs` (bringing the biggest numbers of both `xs` and `ys` to the back).
 
-With a diagram:
+With an ASCII diagram:
 
 ```
 |----------------xs-------------------|------------------ys-------------------|
@@ -321,13 +325,13 @@ def move_k_biggest_elements_to_end(A, xs_start, xs_length, ys_start, ys_length, 
           new_buffer_start, new_buffer_length)
 ```
 
-In actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure (you can see why!)
+In the actual code, we make this clutter of keeping track of positions a little less worse by wrapping them in a structure (you can see why!)
 
 If we called this with `k=Z`, `buffer` would now have `Z` elements. However, in order to make our next step work (making `xs` and `ys` multiples of `Z`), we'll end up moving a bit more than `Z` elements, and we'll explain why.
 
 ### 1.5) Make `|xs|` and `|ys|` multiples of `Z`
 
-So, suppose we moved `Z` elements to the end and we wanted to make `xs` and `ys` multiples of `Z` (to make the rest of the algorithm simpler by knowing that all blocks have `Z` elements). My initial thought was to just move the `(mod Z)` leftover from each subarray to the end, but imagine this case:
+So, suppose we moved `Z` elements to the end and we wanted to make `xs` and `ys` multiples of `Z` (to make the rest of the algorithm simpler by knowing that all blocks have `Z` elements). My initial thought was to just move the `(mod Z)` leftover from each subarray to the end, but see this example:
 
 ```
 2 3 4 5 6 7 8 9   1
@@ -353,7 +357,7 @@ The problem ultimately comes from the fact that we're trying to "push" the lefto
 
 Next, to grab elements for `xs` and `ys` (to pad them to `0 (mod Z)` elements) while conserving the invariant that `buffer` has the biggest elements of `A`, we'll sort `buffer` (because our rotates to move `3Z-2` elements to `buffer` didn't sort them). We can do that in `O(Z^2)` by doing a selection sort (`O((3Z-2)^2) = O(Z^2)`. Then, as long as we grab the first elements of the sorted `buffer`, we conserve our invariant while successfully padding `xs` and `ys`.
 
-Let's first implement a general selection sort, which we'll later use to sort blocks of elements:
+Let's first implement a general selection sort, which we'll later use to sort blocks of elements, too:
 
 ```python
 def selection_sort(length, compare_fn, swap_fn):
@@ -400,7 +404,7 @@ buffer_start += xs_needs + ys_needs
 buffer_length -= xs_needs + ys_needs
 ```
 
-Now, `buffer` has `< 3Z` elements (`Z + (-|X|) % Z + (-|Y|) % Z < 3Z`, which still keeps our final buffer-sorting steps `O(Z)`). Buffer still has the biggest elements of `A`. `xs` and `ys` now have `0 (mod Z)` elements, so we can work with blocks of `Z` elements from now on.
+Now, `buffer` has `< 3Z` elements (`Z + (-|X|) % Z + (-|Y|) % Z < 3Z`, which still keeps our final buffer-sorting step `O(Z)`). Buffer still has the biggest elements of `A`. `xs` and `ys` now have `0 (mod Z)` elements, so we can work with blocks of `Z` elements from now on.
 
 *Note: at first I tried to move the `k` biggest elements to `buffer` in a way that would already have them sorted, but then I realized that this is similar in many ways to the merge problem that we're trying to solve in the first place... Overall I'm sure that there are ways to deal with padding to `0 mod Z` more efficiently here, but this seemed like a reasonably simple approach that stays within our algorithmic bounds.*
 
@@ -443,13 +447,13 @@ Why is that?
   - This means that this first block is in its final position, and we can skip it altogether (it already has the `Z` smallest elements, in order).
 - If both blocks originate from different sorted subarrays (assume the first block is from `xs` and the second from `ys`, but logic holds both ways), then the first block contains the smallest `Z` remaining elements of `xs` (similar logic as the precedent case) and the second block contains the smallest `Z` remaining elements of `ys` (same idea). Thus, the `Z` smallest elements of the two blocks are the `Z` smallest elements of `U{xs, ys}`.
 
-We'll go over an example in the next section to make this clearer.
+We'll go over an example in the next section to make this clearer and expand on the guarantees we preserve.
 
 ### 3) Grab `Z` smallest unsorted elements for each block
 
-This is where the algorithm gets really elegant in my opinion.
+This is where the ideas behind the hints for Kronrod's algorithm get really elegant, in my opinion.
 
-We ultimately want to go through `A`, one block at a time, doing a merge (**not** in-place!) between the current block and the next. How can we afford to do it with extra memory? By using our buffer that we created in step 1! There's something that feels very elegant (if not a bit claustrophobic) about implementing an in-place algorithm by using the additional-memory version of itself, using a temporary working area of the input data.
+For this step, we ultimately want to go through `A`, one block at a time, doing a merge (**not** in-place!) between the current block and the next. How can we afford to do it with extra memory? By using our buffer that we created in step 1! There's something that feels very elegant (if not a bit claustrophobic) about implementing an in-place algorithm by using the additional-memory version of itself, using a temporary working area of the input data.
 
 Let's focus on the implementation first, then go into more detail about why that properly sorts the array `A`.
 
@@ -493,7 +497,7 @@ So, say that we are looking at a certain block `a` and the next one `b`:
 |======== sorted =======|  ^     ^
 ```
 
-Remember: `a` is sorted, `b` is sorted, both of length `Z` (`sqrt(N)`). We want to merge them. We can use our `buffer` as needed (which has a size within `[Z, 3Z)` (at least 1 block, plus `(-|xs|)%Z` and `(-|ys|)%Z`). We don't know that it has at least `2Z` elements (as required by `merge_into_target`), so we'll instead swap `a` (first block) with the start of `buffer`. Then we can use the start of our original `a` as a target directly (that's where we want our merged blocks anyway!) Using our property that it's fine to have our second block be at `target + Z`, we're ready to go:
+Remember: `a` is sorted, `b` is sorted, both of length `Z` (`sqrt(N)`). We want to merge them. We can use our `buffer` as needed (which has size `>= Z`). We'll swap `a` (first block) with the start of `buffer`. Then we can use the start of our original `a` as a target directly (that's where we want our merged blocks anyway!) Using our property that it's fine to have our second block be at `target + Z`, we're ready to go:
 
 ```python
 # 3) Grab Z smallest unsorted elements for each block.
@@ -543,7 +547,7 @@ Let's look at the case where the blocs don't come from the same original subset,
 a0 a1 a2 a3 | a4 a5 a6 a7 ... | x0 x1 x2 x3 | y0 y1 y2 y3 | ...
 ```
 
-We know that `x0 .. x3` are the smallest elements of the remaining `xs`, and that `y0 .. y3` are the smallest elements of the remaining `ys`, so the first `Z` elements of `sort(x0 x1 x2 x3 y0 y1 y2 y3)` are reasonably the smallest elements of all that's remaining.
+We know that `x0 .. x3` are the smallest elements of the remaining `xs`, and that `y0 .. y3` are the smallest elements of the remaining `ys`, so the first `Z` elements of `sort(x0 x1 x2 x3 y0 y1 y2 y3)` are the smallest elements of all that's remaining.
 
 But what about the last `Z` elements of `sort(x0 x1 x2 x3 y0 y1 y2 y3)` (which will become our next block)? For our analysis to hold for all blocks, we must show that this next block that we are creating post-sort can be considered elements of `xs` or `ys`, since we make some of our arguments using assumptions on `xs` and `ys`. In this case, whatever "label" was associated with the biggest element from that sort of `current_block` and `next_block`, we conceptually label the entire block with that. For example, if `y3 > x3` (i.e. `y3` ends up last), we call this new block a block of `ys`. If `x3 > y3` (i.e. `x3` ends up last), we call this a block of `xs`. This makes it such that the overall ordering of `xs` (or `ys`) is preserved like before, since this block is ordered, and the last element is still smaller than the other elements from that "group". For all intents and purposes, we consider that new block as if it was from `xs` (or `ys`) in the first place (since it preserves the properties we care about).
 
@@ -566,7 +570,7 @@ And we're done!
 
 ## Full Example
 
-This is a lot to take in, let's look at an example to get a feel for the structure and operations. Note that all of this processing will feel superfluous and costly for such a small array, but keep in mind that an in-place linear algorithm like this could be used even if the array was `1 PiB` big, while still being linear in time and constant in extra space.
+This is a lot to take in, let's look at an example to get a feel for the structure and operations of this algorithm. Note that all of this processing will feel superfluous and costly for such a small array, but keep in mind that an in-place linear algorithm like this could be used even if the array was `1 PiB` big, while still being linear in time and constant in extra space.
 
 
 
@@ -602,8 +606,6 @@ First, we want to move the `3Z-2 = 3(5)-2 = 13` biggest elements to `buffer`. We
 ...
 [13th biggest]                      ^ xs_biggest                              ^ ys_biggest
 ```
-
-TODO(emond): verify in python
 
 From there, we rotate left by `13` to move them to the end, which we'll now call buffer:
 
@@ -670,7 +672,7 @@ Sort each of the blocks based on their first elements (highlighted), using selec
 
 ### 3) Grab `Z` smallest unordered elements for each block
 
-For each blocks (note: we have 4 blocks total here), do our sort!
+For each blocks (note: we have 4 blocks total here), do our non-in-place merge.
 
 Block `[0,5)`:
 
@@ -679,7 +681,7 @@ Block `[0,5)`:
 |-current_block-| |-next_block-|                                     |---------buffer----------|
 ```
 
-The sorting process, where we do a **non-inplace** merge using `buffer` as "extra" space:
+The sorting process, where we do a **non-in-place** merge using `buffer` as "extra" space:
 
 ```
 0, 8, 10, 14, 15  |  1, 2, 3, 4, 5  [...]  20, 21, 22, 23, 24, 25, 26
@@ -745,11 +747,13 @@ And we are done!
 What's neat is that we now have a very nice primitive to implement a simple bottom-up merge sort in-place that's `O(n lg n)` if we want to:
 
 - We start with subarrays of size `1`, merge each pair of subarrays, using our algorithm (this one is a bit trivial, only involves swaps);
-- Double subarrays size (`2` now), merge each pair of subarrays;
+- Double subarrays size (`2` now), merge each pair of subarrays (which we know are already sorted from our previous step);
 - Double subarrays size (`4` now), merge;
 - Continue until the subarrays size is as big as `A`.
 
 We end up doing `lg N` iterations, where each of them goes over `N` elements.
+
+We can rework the code from before to handle relative positions within an array to implement our merge sort:
 
 ```python
 # Assuming our previous code is available under `merge_inplace(array, start_idx, length)`.
@@ -764,8 +768,140 @@ def merge_sort_inplace(A):
         size *= 2
 ```
 
-This is perhaps a bit too involved for just doing a sort in reality! Maybe there would be a better way to take advantage of the fact that most subarrays (except the last ones) will have the same size when merging, too. But our more general merge is still usable here and this is a nice showcase of it!
+This is perhaps a bit too involved in terms of practical constants just for doing a sort! Maybe there would be a better way to take advantage of the fact that most subarrays (except the last ones) will have the same size when merging, too. But our more general merge is still usable here and this is a nice showcase of it.
 
 ## Peeking
 
-TODO check real algo?
+Now that we have a functional linear in-place algorithm (although with quite a bit of intricate steps), let's look at the "real" version of this algorithm, and inspect the differences.
+
+I had a hard time finding the Kronrod source from 1969, but did find the exercise and its answer in the Volume 3 of The Art of Computer Programming,  section 5.2.4, exercise #18:
+
+```
+[40] (M. A. Kronrod.) Given a file of N records containing only two runs,
+
+    K_1 <= ... <= K_M    and    K_{M+1} <= ... <= K_N,
+
+is it possible to sort the file with O(N) operations in a random-access memory,
+using only a small fixed amount of additional memory space regardless of the
+sizes of M and N? (All of the merging algorithms described in this section make
+use of extra memory space proportional to N.)
+```
+
+Of note, this exercise has difficulty 40! No wonder this was a difficult task.
+In Donald Knuth's words, an exercise of difficulty 40 is:
+
+```
+Quite a difficult of lengthy problem that would be suitable for a term project
+in classroom situations. A student should be able to solve the problem in a
+reasonable amount of time, but the solution is not trivial.
+```
+
+We can look at Donald Knuth's notes on Kronrod's algorithm in the answers section of the book.
+
+### Handling of duplicates
+
+While the overall structure is similar (naturally, we started from hints based on Kronrod's work), there are a bunch of differences. The first one that stood
+out to me is a small note when sorting blocks based on their first element:
+
+```
+If more than one zone has the smallest leading element, choose one that has the
+smallest trailing element.
+```
+
+We did not pay a lot of attention to duplicate elements in our analysis of the algorithm, and at first I suspected a bug if I specifically included a block full of duplicates to mess with the first-element sorting that we are currently doing , e.g. `3 8 9   3 3 3   3 4 5`. As much as I tried to produce a buggy example, it seems that our current algorithm is still working despite not adding a check on the trailing element when leading elements match.
+
+I might be missing something, but ultimately duplicates don't impact the two main properties we rely on for our blocks:
+
+ - Leading block elements are in ascending order.
+ - Each block is sorted, and comes from `xs` or `ys`, in the same relative order that they appeared in their source subarray.
+
+And we maintain those properties as we sort one block at a time, regardless of duplicates. Perhaps I _am_ missing something, or perhaps this is only necessary with the approach presented in the book.
+
+### Simpler handling of block remainders
+
+The next thing that stands out is the overall handling of the remainder blocks of `xs` and `ys`. We approached it by a pretty tedious process of extracting the `3Z-2` biggest elements, sorting them, then rotating to pad `xs` and `ys` with enough elements to be multiples of `Z`.
+
+In Knuth's notes about Kronrad's algorithm, we see that we can simplify our overall preparation and leave some things to be fixed by later processing. The algorithm described in the book is the following, adapted to keep the terms we've been using here:
+
+```
+Divide the array in blocks of Z (i.e. sqrt N) elements each, except the last
+block will contain N mod Z elements. Call the last two blocks (size Z +
+(N mod Z)) area our buffer. Call len(buffer) 's'.
+
+The block containing the last element of 'xs' is swapped with the
+previous-to-last block.
+
+Sort the m blocks based on their leading elements, comparing trailing
+elements when leading elements are equal.
+
+Merge each pairs of blocks in order by first swapping the first block with our
+buffer area, then merging into the first block's original position.
+
+For the final cleanup, sort 2*s elements at the end of our array with insertion
+sort, this brings the s largest elements into our buffer. Then, merge A_{1..N-2*s}
+and A_{N-2*s..N-s} using a similar trick as our block merging, swapping left/right
+and less/greater. Finally, sort buffer by insertion.
+```
+
+Some notes:
+ - Only `Z + (N mod Z)` elements in buffer, and throughout the algorithm buffer does not necessarily hold the biggest elements. This is remedied via extra cleanup at the end.
+ - The swap of the last block of `xs` to move it to buffer cuts into `ys`'s start if `xs` isn't a multiple of `Z`, but this is fine as the `ys` stays
+   sorted overall. `buffer` won't have only the biggest elements, but we fix that in cleanup.
+ - The block that we bring at the end of `xs` via swapping might not fit there, but when we sort blocks by first elements we mitigate that. Perhaps this is where looking at the trailing element matters, I'm not sure.
+ - Same block merging logic as we implemented, which is somewhat encouraging.
+ - The final cleanup is clever -- the block sort & merge steps give us sorted elements before our buffer, so sorting `2s` elements at the end will get us the s largest elements in buffer. The elements we were holding in buffer that are now moved back in our array are not necessarily in order, so we need to merge the big portion of our array with what we just moved in there to restore that. We use `buffer` as temporary storage in the process, so we
+   finally re-sort it to make up for it.
+
+In a way, this approach is akin to moving the processing from preparation to cleanup instead. I have to imagine my approach, while equivalent in algorithmic complexity, is suboptimal in comparison, but I'd be curious to compute by how much.
+
+We can implement Kronrad's algorithm relatively simply, with the primitives we built (available as `merge_inplace_kronrad` or via `kronrad` parameter of `merge_inplace`):
+
+```python
+def merge_inplace_kronrad(R, N):
+    # Note: using the same terminology as TAOCP here.
+    M = array_utils.find_first_unsorted_index(R, start=0, length=N)
+
+    n = int(math.sqrt(N))
+    s = s + N%n  # length of 'auxiliary' area
+
+    # Prepare auxiliary storage.
+    aux_start = N - s
+    zone_R_M = (M-1) // n  # zone that contains R_M
+    # If R_M is in our last zone, need to make sure we don't swap past the end.
+    swap_len = min(n, N - (zone_R_M * n + n))
+    array_utils.swap_k_elements(R, start=zone_R_M*n, k=swap_len,
+                                target=aux_start)
+
+    # Sort & merge blocks.
+    # Very much like our previous algorithm!
+    for i in range(0, N-s-n, n):
+        # Swap block to auxiliary storage
+        array_utils.swap_k_elements(R, start=i, target=aux_start, k=n)
+        _merge_into_target(R, xs_start=aux_start, ys_start=i+n, target=i,
+                           length=n)
+
+    # Cleanup
+    _selection_sort(R, start=aux_start-s, length=2*s)  # Move s biggest to aux.
+    # Same idea as our other merge, but a bit different; going from right to
+    # left (grabbing bigger elements) and not assuming that both sides are the
+    # same length.
+    array_utils.swap_k_elements(R, start=aux_start-s, target=aux_start, k=s)
+    x, y = aux_start-s-1, aux_start+s-1
+    for i in reversed(range(aux_start)):
+        if y < aux_start:
+            break  # Swapped the last auxiliary element, we are done.
+        if x >= 0 and R[x] > R[y]:
+            R[x], R[i] = R[i], R[x]
+            x -= 1
+        else:
+            R[y], R[i] = R[i], R[y]
+            y -= 1
+    _selection_sort(R, start=aux_start, length=s)
+```
+
+Relatively concise! We could probably rework `_merge_into_target` in a more general form such that it could handle both cases, too.
+
+### Refinements
+
+This was an interesting theoretical challenge with a focus on algorithmic complexity, but clearly the practical constants can't be ignored, and we did not ensure stability (duplicate elements preserve their relative ordering).
+Subsequent refinements to Kronrod's 1969 algorithm were made (see [this report](https://nms.kcl.ac.uk/informatics/techreports/papers/TR-04-05.pdf) for an example overview), but the core ideas (using an _internal buffer_ and _block rearrangement_) remain.

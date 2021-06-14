@@ -50,17 +50,20 @@ class SubarrayPointers:
                 A[self.buffer_start:self.buffer_start + self.buffer_length])
 
 
-def merge_inplace(A, start, length, verbose=False):
+def merge_inplace(A, start, length, verbose=False, kronrad=False):
     """Sorts, in-place, a subarray within A that contains 2 sorted subarrays.
 
     Complexity:
         - O(length) time
         - O(1) space
     """
+    if kronrad:
+        merge_inplace_kronrad(A, start, length, verbose=verbose)
+        return
     N = length
     Z = int(math.sqrt(N))
     ys_start = array_utils.find_first_unsorted_index(A, start, N)
-    if ys_start == N:
+    if ys_start is None:
         return  # already sorted!
     pointers = SubarrayPointers(xs_start=start,
                                 xs_length=ys_start - start,
@@ -90,7 +93,9 @@ def merge_inplace(A, start, length, verbose=False):
         print(f"1.1) make multiples of Z: {pointers.show(A)}")
 
     # 2) Sort the blocks according to their first elements.
-    _sort_blocks(A, pointers, Z)
+    _sort_blocks(A,
+                 pointers.xs_start, pointers.xs_length + pointers.ys_length,
+                 Z)
     if verbose:
         print(f"2) sort blocks based on first elements: {pointers.show(A)}")
 
@@ -116,10 +121,54 @@ def merge_inplace(A, start, length, verbose=False):
         print(f"3) sort blocks one at a time : {pointers.show(A)}")
 
     # 4) Sort our buffer of "large" elements.
-    _sort_buffer(A, pointers)
+    _selection_sort(A, pointers.buffer_start, pointers.buffer_length)
     if verbose:
         print(f"4) sort buffer: {pointers.show(A)}")
     assert array_utils.is_sorted(A, start, length)
+
+
+def merge_inplace_kronrad(R, start, N, verbose=False):
+    """As described in TAOCP Vol 3, 5.2.4. exercise #18."""
+    # Note: using the same terminology as TAOCP here.
+    M = array_utils.find_first_unsorted_index(R, start, N)
+    if M is None:
+        return  # Already sorted.
+    n = int(math.sqrt(N))
+    s = n + N % n  # length of auxiliary area
+
+    # Prepare auxiliary storage.
+    aux_start = start + N - s
+    zone_R_M = (M-start-1) // n  # zone that contains R_M (when indexed by 1).
+    # If R_M turns out to be in the last mod n zone, swap only mod n.
+    swap_len = min(n, N - (zone_R_M * n + n))
+    array_utils.swap_k_elements(R, start=start+zone_R_M*n, k=swap_len,
+                                target=aux_start)
+
+    # Sort & merge blocks.
+    _sort_blocks(R, start, N-s, n)
+    for i in range(start, N-s-n, n):
+        # Swap block to auxiliary storage
+        array_utils.swap_k_elements(R, start=i, target=aux_start, k=n)
+        _merge_into_target(R, xs_start=aux_start, ys_start=i+n, target=i,
+                           length=n)
+
+    # Cleanup
+    _selection_sort(R, start=aux_start-s, length=2*s)  # Move s biggest to aux.
+    # Same idea as our other merge, but a bit different; going from right to
+    # left (grabbing bigger elements) and not assuming that both sides are the
+    # same length.
+    array_utils.swap_k_elements(R, start=aux_start-s, target=aux_start, k=s)
+    x, y = aux_start-s-1, aux_start+s-1
+    for i in reversed(range(start, aux_start)):
+        if y < aux_start:
+            break  # Swapped the last auxiliary element, we are done.
+        if x >= start and R[x] > R[y]:
+            R[x], R[i] = R[i], R[x]
+            x -= 1
+        else:
+            R[y], R[i] = R[i], R[y]
+            y -= 1
+    _selection_sort(R, start=aux_start, length=s)
 
 
 def merge_sort_inplace(A):
@@ -269,7 +318,7 @@ def _make_multiples_of_k(A, pointers, k):
     Takes from buffer to pad 'xs' and 'ys' with extra elements to each have a
     size of '0 mod k'. Does so by first sorting 'buffer', then rotating.
     """
-    _sort_buffer(A, pointers)
+    _selection_sort(A, pointers.buffer_start, pointers.buffer_length)
     # How many more elements do we need to reach %k==0?
     xs_needs = (-pointers.xs_length) % k
     ys_needs = (-pointers.ys_length) % k
@@ -293,23 +342,21 @@ def _make_multiples_of_k(A, pointers, k):
     pointers.buffer_length -= xs_needs + ys_needs
 
 
-def _sort_buffer(A, pointers):
-    """Sorts the 'buffer' subarray in-place in O(buffer_length^2)."""
-    start = pointers.buffer_start
-
+def _selection_sort(A, start, length):
+    """O(length^2)"""
     def compare_buffer_elem(i, j): return A[start+i] < A[start+j]
     def swap_buffer_elem(i, j): A[start+i], A[start+j] = A[start+j], A[start+i]
 
-    array_utils.selection_sort(length=pointers.buffer_length,
+    array_utils.selection_sort(length=length,
                                compare_fn=compare_buffer_elem,
                                swap_fn=swap_buffer_elem)
 
 
-def _sort_blocks(A, pointers, Z):
-    """Sorts blocks of 'xs' and 'ys' based on their first element."""
-    assert (pointers.xs_length + pointers.ys_length) % Z == 0
-    num_blocks = (pointers.xs_length + pointers.ys_length) // Z
-    start = pointers.xs_start
+def _sort_blocks(A, start, length, Z):
+    """Sorts blocks of Z elements based on their first element."""
+    assert length % Z == 0
+    num_blocks = length // Z
+
     def compare_first_elem(i, j): return A[start+i*Z] < A[start+j*Z]
 
     def swap_block(i, j):

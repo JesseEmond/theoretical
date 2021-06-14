@@ -334,49 +334,53 @@ class MergeIntoTargetTests(unittest.TestCase):
 
 
 class MergeInplaceTests(unittest.TestCase):
+
+    def setUp(self):
+        self.kronrad = False
+
     def test_evens_left_odds_right(self):
         A = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]
-        merge_inplace(A, start=0, length=len(A))
+        merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_already_sorted(self):
         A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        merge_inplace(A, start=0, length=len(A))
+        merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_evens_right_odds_left(self):
         A = [1, 3, 5, 7, 9, 0, 2, 4, 6, 8]
-        merge_inplace(A, start=0, length=len(A))
+        merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_one_big_elem_left(self):
         A = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8]
-        merge_inplace(A, start=0, length=len(A))
+        merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_one_small_elem_right(self):
         A = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-        merge_inplace(A, start=0, length=len(A))
+        merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_one_small_elem_left(self):
         A = [4, 0, 1, 2, 3, 5, 6, 7, 8, 9]
-        merge_inplace(A, start=0, length=len(A))
+        merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
         self.assertEqual(A, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
     def test_empty_array(self):
         A = []
-        merge_inplace(A, start=0, length=len(A))
+        merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
         self.assertEqual(A, [])
 
     def test_odds_left_evens_right_many_sizes(self):
-        N = 50
+        N = 100  # Runs O(N^2) checks.
         for left_length in range(N):
             for right_length in range(N):
                 left = list(range(1, left_length * 2, 2))
                 right = list(range(0, right_length * 2, 2))
                 A = list(left + right)
-                merge_inplace(A, start=0, length=len(A))
+                merge_inplace(A, start=0, length=len(A), kronrad=self.kronrad)
                 self.assertEqual(A, sorted(left + right))
 
     def test_with_offset(self):
@@ -384,8 +388,15 @@ class MergeInplaceTests(unittest.TestCase):
         suffix = [6, 2, 4]
         xs, ys = [7, 10, 12], [8, 9, 11, 13, 14]
         A = prefix + xs + ys + suffix
-        merge_inplace(A, start=len(prefix), length=len(xs) + len(ys))
+        merge_inplace(A, start=len(prefix), length=len(xs) + len(ys),
+                      kronrad=self.kronrad)
         self.assertEqual(A, prefix + [7, 8, 9, 10, 11, 12, 13, 14] + suffix)
+
+
+class MergeInplaceKronradTests(MergeInplaceTests):
+
+    def setUp(self):
+        self.kronrad = True
 
 
 class MergeSortInplaceTests(unittest.TestCase):

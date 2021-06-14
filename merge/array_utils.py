@@ -4,7 +4,7 @@
 def find_first_unsorted_index(A, start, length):
     """Finds the index to the first element in the
     subarray A[start:start+length) that is not in sorted order.
-    If the subarray is fully sorted, returns start+length.
+    If the subarray is fully sorted, None.
 
     Example:
         A = [10, 12, 13, 11, 14, 15]
@@ -17,7 +17,7 @@ def find_first_unsorted_index(A, start, length):
     """
     unsorted_elements = (i for i in range(start+1, start+length)
                          if A[i-1] > A[i])
-    default = start+length
+    default = None
     return next(unsorted_elements, default)
 
 
@@ -130,5 +130,4 @@ def invert(A, start, length):
 def is_sorted(A, start, length):
     """Checks if the given array is sorted for the range [start, start+length).
     """
-    all_unsorted_index = start + length
-    return find_first_unsorted_index(A, start, length) == all_unsorted_index
+    return find_first_unsorted_index(A, start, length) is None

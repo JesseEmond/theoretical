@@ -11,7 +11,7 @@ class FindFirstUnsortedIndexTests(unittest.TestCase):
 
     def test_all_sorted(self):
         A = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        self.assertEqual(find_first_unsorted_index(A, 0, len(A)), len(A))
+        self.assertIsNone(find_first_unsorted_index(A, 0, len(A)))
 
     def test_unordered_middle(self):
         A = [0, 3, 6, 1, 2, 4, 5, 7, 8]
@@ -19,7 +19,7 @@ class FindFirstUnsortedIndexTests(unittest.TestCase):
 
     def test_sorted_middle(self):
         A = [1, 0, 2, 3, 4, 5, 6, 7, 8]
-        self.assertEqual(find_first_unsorted_index(A, start=1, length=5), 6)
+        self.assertIsNone(find_first_unsorted_index(A, start=1, length=5))
 
 
 class SwapKElementsTests(unittest.TestCase):
