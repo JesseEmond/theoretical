@@ -2,6 +2,8 @@
 
 TODO: summary
 
+_Note: some of the in-line LaTeX, especially summations and products, currently shows up a bit broken on GitHub, follow [this discussion](https://github.com/orgs/community/discussions/17051) for fixes. Example: $`\sum_{k=0}^{\infty}{x_k}`$ or $`\prod_{k=1}^{\infty}{x^k}`$._
+
 ## Context
 
 While picking back up [Project Euler](https://projecteuler.net/) problems recently (math challenges to solve programatically), I ran into the problem of counting how many ways there are to write a given number as a sum of prime numbers, and in particular finding the _first_ number where the count of "**prime partitions**" of that number was above some threshold.
@@ -75,16 +77,16 @@ The core idea of generating functions is to **rewrite a sequence of numbers $a_n
 - In terms of notation, if a series is called $A(n)$, it is common to name the generating function where $A(n)$ are the coefficients as $A(x)$ (i.e. $`A(x) = \sum_{n=0}^{\infty}A(n) x^n`$).
 
 Back to our initial goal, we will want to find a way to produce a generating function $p(x)$, where $p(n)$ are the coefficients of the formal power series. It will look like:
-- $p(x) = p(0) 1 + p(1) x + p(2)x^2 + p(3)x^3 + p(4)x^4 + p(5)x^5 + p(6)x^6 + \cdots$, or:
-- $p(x) = 1 + x + 2x^2 + 3x^3 + 5x^4 + 7x^5 + 11x^6 + \cdots$
+- $`p(x) = p(0) 1 + p(1) x + p(2)x^2 + p(3)x^3 + p(4)x^4 + p(5)x^5 + p(6)x^6 + \cdots`$, or:
+- $`p(x) = 1 + x + 2x^2 + 3x^3 + 5x^4 + 7x^5 + 11x^6 + \cdots`$
 
 #### Example: Dice Sum Generating Function
 
-To get used to the idea of generating function, let's imagine that we have two dice: $d_6$, a 6-sided dice, and $d_4$, a 4-sided dice. Let's define $d(s)$ as the probability of getting a given $d_6 + d_4$ sum $s$. This is an easy example to solve manually, but working through it with generating functions will help us understand how to apply similar ideas to partitions.
+To get used to the idea of generating function, let's imagine that we have two dice: $`d_6`$, a 6-sided dice, and $`d_4`$, a 4-sided dice. Let's define $d(s)$ as the probability of getting a given $d_6 + d_4$ sum $s$. This is an easy example to solve manually, but working through it with generating functions will help us understand how to apply similar ideas to partitions.
 
-We can represent the generating function of the possible sides of $d_6$ as $d_6(x) = (x + x^2 + x^3 + x^4 + x^5 + x^6)$. Each coefficient $1$ of $x^k$ represents the equal odds of rolling side $k$. We similarly define $d_4(x) = (x + x^2 + x^3 + x^4)$.
+We can represent the generating function of the possible sides of $`d_6$ as $d_6(x) = (x + x^2 + x^3 + x^4 + x^5 + x^6)`$. Each coefficient $1$ of $x^k$ represents the equal odds of rolling side $k$. We similarly define $`d_4(x) = (x + x^2 + x^3 + x^4)`$.
 
-If we then define $d(x) = d_6(x) d_4(x)$ and expand the result, we get something interesting:
+If we then define $`d(x) = d_6(x) d_4(x)`$ and expand the result, we get something interesting:
 $$d(x) = d_6(x) d_4(x)$$
 $$d(x) = (x + x^2 + x^3 + x^4 + x^5 + x^6) (x + x^2 + x^3 + x^4)$$
 $$d(x) = (x^2 + x^3 + x^4 + x^5) + (x^3 + x^4 + x^5 + x^6) + (x^4 + x^5 + x^6 + x^7) + (x^5 + x^6 + x^7 + x^8) + (x^6 + x^7 + x^8 + x^9) + (x^7 + x^8 + x^9 + x^{10})$$
@@ -97,15 +99,15 @@ The multiplication of the polynomials was used as a tool to count how many pairs
 ### Geometric Series
 To create this $p(n)$ partition generating function, we'll make use of the [Geometric series](https://en.wikipedia.org/wiki/Geometric_series) $1 + x + x^2 + x^3 + x^4 + \cdots$ (note: we're still using the naming of $x$ here, but this is more commonly written as a ratio $r$).
 
-For convenience, we will sometimes write this series as $\frac{1}{1-x}$. This notation comes from the closed form of the geometric series when the "ratio" $x$ has $|x| < 1$ and with coefficient $a=1$, but we use it here even though $x$ is indeterminate as a convenient way to express $1 + x + x^2 + x^3 + \cdots$.
+For convenience, we will sometimes write this series as $`\frac{1}{1-x}`$. This notation comes from the closed form of the geometric series when the "ratio" $x$ has $|x| < 1$ and with coefficient $a=1$, but we use it here even though $x$ is indeterminate as a convenient way to express $`1 + x + x^2 + x^3 + \cdots`$.
 
-We can similarly express $1 + x^2 + x^4 + x^6 + \cdots$ as $\frac{1}{1-x^2}$, or more generally for a multiple of exponents $k$:
+We can similarly express $`1 + x^2 + x^4 + x^6 + \cdots$ as $\frac{1}{1-x^2}`$, or more generally for a multiple of exponents $k$:
 $$\sum_{n=0}^{\infty}{x^{kn}} = \frac{1}{1-x^k}$$
 
 <details>
 <summary>Details about the generalization to 'k'</summary>
 
-We can rewrite $1 + x^k + x^2k + x^3k + x^4k + \cdots$ (for some $k$) as $1 + (x^k) + (x^k)^2 + (x^k)^3 + (x^k)^4 + \cdots$, effectively the geometric series of $x' = x^k$ (reparameterization). This will give us:
+We can rewrite $`1 + x^k + x^2k + x^3k + x^4k + \cdots`$ (for some $k$) as $`1 + (x^k) + (x^k)^2 + (x^k)^3 + (x^k)^4 + \cdots`$, effectively the geometric series of $x' = x^k$ (reparameterization). This will give us:
 
 $$\sum_{n=0}^{\infty}{(x')^n} = \frac{1}{1-x'}$$
 $$\sum_{n=0}^{\infty}{(x^k)^n} = \frac{1}{1-(x^k)}_\square$$
@@ -114,8 +116,8 @@ $$\sum_{n=0}^{\infty}{(x^k)^n} = \frac{1}{1-(x^k)}_\square$$
 
 ### Multiplying Geometric Series
 If we take two geometric series:
-- $1 + x + x^2 + x^3 + x^4 + \cdots$
-- $1 + x^2 + x^4 + x^6 + x^8 + \cdots$
+- $`1 + x + x^2 + x^3 + x^4 + \cdots`$
+- $`1 + x^2 + x^4 + x^6 + x^8 + \cdots`$
 
 and multiply them together, we get something interesting:
 $$\frac{1}{1-x} \frac{1}{1-x^2}$$
@@ -148,10 +150,10 @@ This gives us a useful framing of the different parts of the product:
 - $x^{2+2+2}$ represents partitions where there are exactly $3$ parts of value $2$;
 - $\frac{1}{1-x}$ represents parts of value $1$;
 - $\frac{1}{1-x^2}$ represents parts of value $2$;
-- $\frac{1}{1-x} \frac{1}{1-x^2}$ is the generating function for partitions made up of only parts of value $1$ or $2$ -- let's call this function $\pi_2(x)$, where $\pi_k(n)$ gives the number of partitions of $n$ with parts $<= k$.
+- $\frac{1}{1-x} \frac{1}{1-x^2}$ is the generating function for partitions made up of only parts of value $1$ or $2$ -- let's call this function $\pi_2(x)$, where $\pi_k(n)$ gives the number of partitions of $n$ with parts $`\leq k`$.
 
 ### Partitions Generating Function: $p(x)$
-Now, we can extend this idea to partitions with larger parts as well. Effectively, we want to generalize our $\pi_k(x)$ function of partitions of parts $<= k$ to arbitrarily large $k$, by multiplying geometric series of successive $x^k$. We finally get:
+Now, we can extend this idea to partitions with larger parts as well. Effectively, we want to generalize our $`\pi_k(x)`$ function of partitions of parts $`\leq k`$ to arbitrarily large $k$, by multiplying geometric series of successive $x^k$. We finally get:
 
 $$p(x) = \prod_{k=1}^{\infty}{\frac{1}{1-x^k}}$$
 
@@ -160,9 +162,9 @@ This will produce a formal power series where the coefficient for a given $x^n$ 
 While reading on this topic, it is helpful to be aware of alternative ways to express the different terms in $p(x)$:
 - $p(x)$ can be written in terms of the [Euler function](https://en.wikipedia.org/wiki/Euler_function) $\phi(x) = \prod_{k=1}^{\infty}{(1-x^k)}$, i.e. $\frac{1}{\phi(x)}$;
 - a [q-Series](https://mathworld.wolfram.com/q-Series.html) is a series involving coefficients of the form $(a; q)_n = \prod_{k=0}^{n-1}{(1-aq^k)}$;
-  - $(a; q)_\infty$ is defined as $(a; q)_\infty = \prod_{k=0}^{\infty}{(1-aq^k)}$ and $(a; q)_\infty$ is called a [q-Pochhammer symbol](https://mathworld.wolfram.com/q-PochhammerSymbol.html);
-  - $(a)_n$ is shorthand for $(a; q)_n$ and $(q)_n$ is notation for $(q, q)_n = \prod_{k=1}^\infty{(1-q^k)}$;
-  - $(x)_\infty$ is the Euler function $\phi(x)$, so we can also write $p(x) = \frac{1}{(x)_\infty}$.
+  - $`(a; q)_\infty`$ is defined as $`(a; q)_\infty = \prod_{k=0}^{\infty}{(1-aq^k)}`$ and $`(a; q)_\infty`$ is called a [q-Pochhammer symbol](https://mathworld.wolfram.com/q-PochhammerSymbol.html);
+  - $(a)_n$ is shorthand for $(a; q)_n$ and $(q)_n$ is notation for $`(q, q)_n = \prod_{k=1}^\infty{(1-q^k)}`$;
+  - $(x)_\infty$ is the Euler function $\phi(x)$, so we can also write $`p(x) = \frac{1}{(x)_\infty}`$.
 
 ### Restricted Partitions
 TODO partition odd parts
