@@ -68,11 +68,11 @@ What we eventually want is to study the sequence of values of $p(n)$ (and later 
 
 The sequence of integers of values of $p(n)$ ($1, 2, 3, 5, 7, 11, \cdots$) can be studied on its own, but reformulating it as a generating function gives us familiar tools to algebraically manipulate our sequence and learn about its properties.
 
-Let us first talk about [Formal power series](https://en.wikipedia.org/wiki/Formal_power_series): infinite sums of terms of the form $a x^n$, where $a$ is the coefficient, and $x^n$ is a variable $x$ to the $nth$ power. This can be seen as a generalization of a polynomial. For example, $1 - 3x + 5x^2 - 7x^3 + 9x^4 - 11x^5 + \cdots$ is a formal power series alternating positive and negative odd coefficients, which we could also write as $\sum_{n=0}^{\infty}(-1)^n (2n+1) x^n$.
+Let us first talk about [Formal power series](https://en.wikipedia.org/wiki/Formal_power_series): infinite sums of terms of the form $a x^n$, where $a$ is the coefficient, and $x^n$ is a variable $x$ to the $nth$ power. This can be seen as a generalization of a polynomial. For example, $1 - 3x + 5x^2 - 7x^3 + 9x^4 - 11x^5 + \cdots$ is a formal power series alternating positive and negative odd coefficients, which we could also write as $`\sum_{n=0}^{\infty}{(-1)^n (2n+1) x^n}`$.
 
 The core idea of generating functions is to **rewrite a sequence of numbers $a_n$ as a formal power series** where our sequence $a_n$ are the coefficients in the series. Note that this is not really a function -- $x$ is [indeterminate](https://en.wikipedia.org/wiki/Indeterminate_(variable)) and we're not interested in its value -- we only want to use it as a placeholder to manipulate the overall expression. It is a bit unorthodox, but remembering the quote above about treating generating functions as a "bag" holding our coefficients can be helpful.
-- In the earlier example, if we are interested in the series $a_n = (-1)^n (2n+1)$, we might write it as a generating function as $\sum_{n=0}^{\infty}a_n x^n$, giving the formal power series above.
-- In terms of notation, if a series is called $A(n)$, it is common to name the generating function where $A(n)$ are the coefficients as $A(x)$ (i.e. $A(x) = \sum_{n=0}^{\infty}{A(n) x^n}$).
+- In the earlier example, if we are interested in the series $a_n = (-1)^n (2n+1)$, we might write it as a generating function as $`\sum_{n=0}^{\infty}{a_n x^n}`$, giving the formal power series above.
+- In terms of notation, if a series is called $A(n)$, it is common to name the generating function where $A(n)$ are the coefficients as $A(x)$ (i.e. $`A(x) = \sum_{n=0}^{\infty}{A(n) x^n}`$).
 
 Back to our initial goal, we will want to find a way to produce a generating function $p(x)$, where $p(n)$ are the coefficients of the formal power series. It will look like:
 - $p(x) = p(0) 1 + p(1) x + p(2)x^2 + p(3)x^3 + p(4)x^4 + p(5)x^5 + p(6)x^6 + \cdots$, or:
