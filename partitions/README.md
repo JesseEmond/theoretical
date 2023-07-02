@@ -87,12 +87,10 @@ We can represent the generating function of the possible sides of $d_6$ as $d_6(
 If we then define $d(x) = d_6(x) d_4(x)$ and expand the result, we get something interesting:
 $$d(x) = d_6(x) d_4(x)$$
 $$d(x) = (x + x^2 + x^3 + x^4 + x^5 + x^6) (x + x^2 + x^3 + x^4)$$
-$$d(x) = (x^2 + x^3 + x^4 + x^5) + (x^3 + x^4 + x^5 + x^6) +
-(x^4 + x^5 + x^6 + x^7) + (x^5 + x^6 + x^7 + x^8) +
-(x^6 + x^7 + x^8 + x^9) + (x^7 + x^8 + x^9 + x^{10})$$
+$$d(x) = (x^2 + x^3 + x^4 + x^5) + (x^3 + x^4 + x^5 + x^6) + (x^4 + x^5 + x^6 + x^7) + (x^5 + x^6 + x^7 + x^8) + (x^6 + x^7 + x^8 + x^9) + (x^7 + x^8 + x^9 + x^{10})$$
 $$d(x) = x^2 + 2x^3 + 3x^4 + 4x^5 + 4x^6 + 4x^7 + 3x^8 + 2x^9 + 1x^{10}$$
 
-Notice how the coefficient of each $x^k$ now gives us the number of possible scenarios that give us a dice sum of $k$. In other words, using the notation $[x^k](d(x))$ to mean the coefficient of $x^k$ in $d(x)$, we can now define our probability function $d(s) = \frac{1}{40}[x^s](d(x))$, i.e. the coefficient of $x^s$ in $d(x)$, divided by the total number of pairs $40$.
+Notice how the coefficient of each $x^k$ now gives us the number of possible scenarios that give us a dice sum of $k$. In other words, using the notation $`[x^k](d(x))`$ to mean the coefficient of $x^k$ in $d(x)$, we can now define our probability function $`d(s) = \frac{1}{40}[x^s](d(x))`$, i.e. the coefficient of $x^s$ in $d(x)$, divided by the total number of pairs $40$.
 
 The multiplication of the polynomials was used as a tool to count how many pairs sum to a given value. A similar idea will be leveraged and generalized to count partitions.
 
