@@ -1,3 +1,18 @@
+TODOs
+- [ ] change structure to focus on generative sums as an _alternative_ approach
+- [ ] add dynamic programming solution early + algo complexity
+- [ ] restructure subset sum with repeat etc. as a revisit
+- [ ] mention faster algorithms https://arxiv.org/pdf/1205.5991.pdf
+- [ ] write intro
+- [ ] euler transform rationale
+- [ ] algo complexity p(n)
+- [ ] prime partitions
+- [ ] listing partitions
+- [ ] consider splitting next portions as diff top-level sections (if not solved via generative functions)?
+- [ ] subset sum with repeats
+- [ ] multi-dimensional parts
+- [ ] tetris packing
+
 # Partitions
 
 TODO: summary
@@ -167,27 +182,132 @@ While reading on this topic, it is helpful to be aware of alternative ways to ex
   - $(x)_\infty$ is the Euler function $\phi(x)$, so we can also write $`p(x) = \frac{1}{(x)_\infty}`$.
 
 ### Restricted Partitions
-TODO partition odd parts
-TODO others?
-TODO why same logic applies
+We can re-use this logic to create generating functions for partitions with parts that have restrictions on them (instead of any positive integer). Effectively, we want to make sure that each geometric series that participates in the infinite product only represents the parts that we care about.
+
+For example:
+- Partition of odd parts (e.g. $6: (5, 1); (3, 3); (3, 1, 1, 1); (1, 1, 1, 1, 1, 1)$)
+  $$p_{odd}(x) = \prod_{i=1}^{\infty}{\frac{1}{1 - x^{2i-1}}} = \frac{1}{1-x} \frac{1}{1-x^3} \frac{1}{1-x^5} \cdots$$
+  
+- Partition of powers of 2 (e.g. $5: (4, 1); (2, 2, 1); (2, 1, 1, 1); (1, 1, 1, 1, 1)$)
+  $$p_{pow2}(x) = \prod_{i=1}^{\infty}{\frac{1}{1 - x^{2^{i-1}}}} = \frac{1}{1-x} \frac{1}{1-x^2} \frac{1}{1-x^4} \cdots$$
+- Partition into distinct parts only -- no repeats (e.g. $6: (5, 1); (4, 2)$)
+  $$p_{distinct}(x) = \prod_{k=1}^{\infty}{(1+x^k)} = (1+x)(1+x^2)(1+x^3)\cdots$$
+  - The rationale for this one is that each $(1+x^k)$ term amounts to whether we "select" a given part $k$ for a sum (terms that multiply with the $1$ in $(1+x^k)$ contribute to partitions where we _don't_ select part $k$, terms that multiply with $x^k$ in $(1+x^k)$ contribute to partitions we we _do_ include part $k$).
+  - Interestingly, this [is equal](https://www.youtube.com/watch?v=z0actv-r7jM&t=1004s) to $`p_{odd}(x)`!$.
+  
+Or, in our case, partitions where parts must be prime...
 
 ### Prime Partitions
-TODO euler
-TODO example
-TODO generating function
+
+This brings us to the problem we are trying to solve. Rephrased, the Euler Project problem in question effectively asks:
+
+> What is the first value which can be written as the sum of primes in over five thousand different ways?
+
+For example, $10$ can be written as a sum of primes in $5$ total ways:
+- $10 = 7 + 3$
+- $10 = 5 + 5$
+- $10 = 5 + 3 + 2$
+- $10 = 3 + 3 + 2 + 2$
+- $10 = 2 + 2 + 2 + 2 + 2$
+
+Armed with our new knowledge of generating function, we can now define $`p_{prime}(x)`$:
+$$p_{prime}(x) = \prod_{p \in primes}{\frac{1}{1-x^p}}$$
 
 ## Computing $p(n)$
-TODO Euler transform
-TODO proof?
-TODO computation high level
-TODO computation pseudocode
+
+Great, we have a generating function where the coefficients are the values we are looking for, but that's not exactly practical. How do we compute $p(n)$ for some $n$?
+
+For this, we'll make use of an [Euler transform](https://mathworld.wolfram.com/EulerTransform.html) (the "third type" of transform on that link) that says the following:
+
+> If integer sequences $`a_1, a_2, a_3, \cdots`$ and $`b_1, b_2, b_3, \cdots`$ are related by:
+> $$1 + \sum_{n=1}^{\infty}b_nx^n = \prod_{i=1}^{\infty}\frac{1}{(1-x^i)^{a_i}}$$
+> then $b_n$ is said to be the Euler transform of $a_n$.
+> The Euler transform can be computed by introducing the intermediate series $`c_1, c_2, c_3, \cdots`$ given by:
+> $$c_n = \sum_{d|n} d a_d$$
+> Then:
+> $$b_n = \frac{1}{n} \left[ c_n + \sum_{k=1}^{n-1} c_k b_{n-k} \right]$$
+
+We can see that for $a_n = 1$ for all $n$ this conveniently becomes our $p(x)$ function definition (and $`c_n`$ becomes the [sum of divisors function](https://en.wikipedia.org/wiki/Divisor_function), $`\sigma(n)`$), and gives us an approach to compute a given $p(n)$ through $`c_n`$:
+
+```
+c(n):
+  return sum(divisors(n))
+
+p(n):
+  if n = 1: return 1
+  return (c(n) + sum(c(k) * p(n-k) for k in range(1, n))) // n
+```
+
+To compute this more practically, we can use an adapted [Sieve of Eratosthenes](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes) to gradually build the factorizations of the terms up to the desired number, and use that information to gradually compute $p(k)$ for $`1 \leq k \leq n`$.
+- As a short description, the sieve of Eratosthenes is a relatively simple way to find primes up to $n$: keep a bool array up to $n$ all set to _true_, loop through the numbers in order, when the bool array has _true_ for that number we have a prime, tag all of its multiples as _false_;
+- We can extend this to tag prime factors whenever we find a prime, by iterating through the prime multiples and repeating for prime powers;
+- There are more efficient sieves (e.g. [Sieve of Atkins](https://en.wikipedia.org/wiki/Sieve_of_Atkin)) and modifications to Eratosthenes to be more efficient (e.g. only store an array for odd numbers), but we'll keep the simple approach here;
+- We'll make use of the factorization to compute $`\sigma(n)`$ (through its [multiplicative properties](https://en.wikipedia.org/wiki/Divisor_function#Properties)):
+  $$\text{For factorization }n = \prod_{i=1}^{r}p_i^{a_i}$$
+  $$\sigma(n) = \prod_{i=1}^{r} \frac{p_i^{(a_i+1)}-1}{p_i-1}$$
+
+Here is our `partitions(n)` function (+ helper to get factorizations for numbers up to $n$), in Python:
+```python
+Factor = Tuple[int, int]  # (p, e), for p**e
+Callback = Callable[[int, List[Factor]], None]  # i.e. fn(n, factorize(n))
+
+def visit_factorizations(n: int, visitor: Callback) -> None:
+  # Using sieve of Eratosthenes with an array of per-number factorization
+  factors = [[] for _ in range(n+1)]
+  for p in range(2, n+1):
+    if not factors[p]:  # p prime
+      # Tag multiples of prime 'p' (including 'p').
+      for k in range(p, n+1, p):
+        factors[k].append((p, 1))
+      p_e = p * p  # powers of p: 'p**e'
+      while p_e <= n:
+        # Tag multiples of prime power 'p**e' (including 'p**e').
+        for k in range(p_e, n+1, p_e):
+          _, e = factors[k][-1]
+          factors[k][-1] = (p, e+1)
+        p_e *= p
+    visitor(p, factors[p])
+
+def sum_of_divisors(factorization: List[Factor]) -> int:
+  # sigma(n), from its factorization
+  sigma = 1
+  for p, e in factorization:
+    sigma *= (p**(e+1) - 1) // (p - 1)
+  return sigma
+
+def partitions(n: int) -> int:
+  sum_divisors = [0, 1] + [0] * (n-1)  # this is sigma(k), in our case c(k)
+  num_partitions = [1, 1] + [0] * (n-1)  # p(k), in our case b(k)
+
+  def _visit(k: int, factorization: List[Factor]) -> None:
+    b, c = num_partitions, sum_divisors  # For conciseness
+    c[k] = sum_of_divisors(factorization)
+    b[k] = (c[k] + sum(c[i] * b[k-i] for i in range(1, k))) // k
+  
+  visit_factorizations(n, _visit)
+  return num_partitions[n]
+```
+
+And if we run this we can e.g. successfully reproduce the entries on [A000041](https://oeis.org/A000041/list)!
+
+### Euler Transform Rationale
+
+This is neat, we can compute $p(n)$, but where does this Euler transform come from?
+
+TODO: where does the transform come from?
 
 ### Algorithmic Complexity
-TODO
+
+TODO compute
+
+TODO compare to bruteforce?
 
 ## Computing Prime Partitions
-TODO eratosthenes to get prime factors
-TODO extend prev algo
+TODO extend prev algo, generalize code
+
+TODO sum divisors logic applicable for restricted a?
+
+TODO python impl + example
 
 ## Listing Partitions
 TODO
